@@ -431,42 +431,17 @@
     <p>Click to lock mouse and play</p>
   </div>
 
-  <!-- Markdown Runner -->
-  <script src="runner/markdown-runner.js"></script>
+  <!-- Game Bundle -->
+  <script src="game.js"></script>
 
   <!-- Game Logic -->
   <script>
     let lobby = null;
+    let lobbyUI = null;
     let game = null;
-    let gameLoaded = false;
-
-    // Load game code from markdown docs
-    async function loadGameCode() {
-      if (gameLoaded) return;
-
-      document.getElementById('loading').style.display = 'block';
-
-      try {
-        await GoldenShower.runAll([
-          'engine/core.md',
-          'multiplayer/network.md',
-          'multiplayer/lobby.md',
-          'multiplayer/game.md'
-        ]);
-        gameLoaded = true;
-        console.log('[Main] Game code loaded from documentation');
-      } catch (err) {
-        console.error('[Main] Failed to load game:', err);
-        alert('Failed to load game. Please refresh and try again.');
-      }
-
-      document.getElementById('loading').style.display = 'none';
-    }
 
     // Host a new game
-    async function hostGame() {
-      await loadGameCode();
-
+    function hostGame() {
       lobby = new GoldenShower.Lobby();
       const code = lobby.create();
 
@@ -475,7 +450,7 @@
       document.getElementById('lobby-container').style.display = 'block';
 
       // Setup lobby UI
-      const lobbyUI = new GoldenShower.LobbyUI(document.getElementById('lobby-container'));
+      lobbyUI = new GoldenShower.LobbyUI(document.getElementById('lobby-container'));
       lobbyUI.bind(lobby);
       lobbyUI.render();
 
@@ -486,14 +461,12 @@
     }
 
     // Join existing game
-    async function joinGame() {
+    function joinGame() {
       const code = document.getElementById('lobby-code').value.trim().toUpperCase();
       if (!code || code.length !== 6) {
         alert('Please enter a valid 6-character lobby code');
         return;
       }
-
-      await loadGameCode();
 
       lobby = new GoldenShower.Lobby();
       lobby.join(code);
@@ -502,7 +475,7 @@
       document.getElementById('lobby-container').style.display = 'block';
 
       // Setup lobby UI
-      const lobbyUI = new GoldenShower.LobbyUI(document.getElementById('lobby-container'));
+      lobbyUI = new GoldenShower.LobbyUI(document.getElementById('lobby-container'));
       lobbyUI.bind(lobby);
       lobbyUI.render();
 
@@ -526,10 +499,10 @@
 
       // Add players
       data.players.forEach(p => {
-        const isLocal = p.id === lobby.localPlayerId;
+        const isLocal = p.id === lobby.localId;
         const player = game.addPlayer(p.id, isLocal);
         player.name = p.name;
-        player.color = GoldenShower.Characters[p.character].color;
+        player.color = GoldenShower.Characters[p.character]?.color || [0.5,0.5,0.5];
       });
 
       // Apply settings
@@ -573,8 +546,6 @@
 
     // Quick play (single player testing)
     async function quickPlay() {
-      await loadGameCode();
-
       const canvas = document.getElementById('game');
       game = new GoldenShower.Game(canvas);
       await game.init();
