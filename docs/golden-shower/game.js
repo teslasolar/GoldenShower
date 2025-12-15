@@ -444,6 +444,8 @@
       this.isHost=false;
       this.localId=this._genId();
       this._initChannel();
+      // Add self to players (will get synced with host's list)
+      this._addPlayer({id:this.localId,name:'Player',ready:false,character:0});
       console.log('[Lobby] Joining:',this.code);
       return this.localId;
     }
@@ -484,8 +486,14 @@
           break;
         case 'sync':
           if(!this.isHost){
+            // Save local player state
+            const localP=this.players.get(this.localId);
             this.players.clear();
             msg.players.forEach(p=>this.players.set(p.id,p));
+            // Ensure local player is in the list
+            if(localP&&!this.players.has(this.localId)){
+              this.players.set(this.localId,localP);
+            }
             this.settings=msg.settings;
             this.emit('update');
           }
