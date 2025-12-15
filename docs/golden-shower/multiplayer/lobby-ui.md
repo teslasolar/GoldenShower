@@ -13,11 +13,14 @@ class LobbyUI {
   render(){
     const L=this.lobby;if(!L)return;
     const chars=GS.Characters||[];
+    const players=Array.from(L.players.values());
+    const localPlayer=players.find(p=>p.id===L.localId);
+    const allReady=players.length>0&&players.every(p=>p.ready);
     this.el.innerHTML=`
       <div class="lobby-panel">
         <h2>LOBBY: ${L.code}</h2>
-        <div class="players-list"><h3>PLAYERS (${L.players.size}/${L.settings.max})</h3>
-          ${L.players.map(p=>`<div class="player-row ${p.ready?'ready':''}">
+        <div class="players-list"><h3>PLAYERS (${players.length}/${L.settings.max})</h3>
+          ${players.map(p=>`<div class="player-row ${p.ready?'ready':''}">
             <span class="player-name">${p.name}</span>
             <span class="player-char">${chars[p.character]?.name||'?'}</span>
             <span class="player-status">${p.ready?'READY':'NOT READY'}</span>
@@ -29,8 +32,8 @@ class LobbyUI {
           ).join('')}</div>
         </div>
         <div class="actions">
-          <button id="readyBtn" class="btn btn-ready">${L.players.find(p=>p.id===L.localId)?.ready?'UNREADY':'READY'}</button>
-          ${L.isHost?`<button id="startBtn" class="btn btn-start" ${L.players.every(p=>p.ready)&&L.players.length>0?'':'disabled'}>START</button>`:''}
+          <button id="readyBtn" class="btn btn-ready">${localPlayer?.ready?'UNREADY':'READY'}</button>
+          ${L.isHost?`<button id="startBtn" class="btn btn-start" ${allReady?'':'disabled'}>START</button>`:''}
           <button id="leaveBtn" class="btn btn-leave">LEAVE</button>
         </div>
       </div>`;
@@ -39,7 +42,9 @@ class LobbyUI {
   _bind(){
     const L=this.lobby;
     document.getElementById('readyBtn')?.addEventListener('click',()=>{
-      const p=L.players.find(x=>x.id===L.localId);L.setReady(!p?.ready);
+      const players=Array.from(L.players.values());
+      const p=players.find(x=>x.id===L.localId);
+      L.setReady(!p?.ready);
     });
     document.getElementById('startBtn')?.addEventListener('click',()=>L.start());
     document.getElementById('leaveBtn')?.addEventListener('click',()=>location.reload());
