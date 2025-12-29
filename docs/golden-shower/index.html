@@ -5,421 +5,87 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Golden Shower - GoldenEye Multiplayer by Konomi Systems</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: #0a0a0f;
-      color: #e0e0e0;
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-    }
-
-    /* Main canvas */
-    #game {
-      width: 100vw;
-      height: 100vh;
-      display: block;
-      background: #111;
-    }
-
-    /* HUD overlay */
-    #hud {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      font-size: 16px;
-      text-shadow: 2px 2px 4px #000;
-      pointer-events: none;
-      z-index: 100;
-    }
-
-    #hud .health {
-      color: #ff4444;
-      font-size: 24px;
-    }
-
-    #hud .ammo {
-      color: #ffcc00;
-      margin-top: 5px;
-    }
-
-    #hud .score {
-      color: #00ccff;
-      margin-top: 15px;
-    }
-
-    #hud .fps {
-      color: #666;
-      margin-top: 10px;
-      font-size: 12px;
-    }
-
-    /* Crosshair */
-    #crosshair {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 24px;
-      pointer-events: none;
-      z-index: 100;
-    }
-
-    /* Main menu */
-    #menu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2f 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-    }
-
-    #menu h1 {
-      font-size: 48px;
-      color: #d4af37;
-      text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-      margin-bottom: 10px;
-      letter-spacing: 8px;
-    }
-
-    #menu .subtitle {
-      color: #888;
-      margin-bottom: 40px;
-      font-size: 14px;
-    }
-
-    #menu .company {
-      color: #666;
-      font-size: 12px;
-      margin-bottom: 30px;
-    }
-
-    .menu-box {
-      background: rgba(20, 20, 30, 0.9);
-      border: 2px solid #d4af37;
-      padding: 30px 50px;
-      text-align: center;
-    }
-
-    .menu-box input {
-      background: #1a1a2a;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 12px 20px;
-      font-size: 18px;
-      font-family: inherit;
-      text-align: center;
-      width: 200px;
-      margin-bottom: 20px;
-      letter-spacing: 4px;
-    }
-
-    .menu-box input::placeholder {
-      color: #555;
-      letter-spacing: 2px;
-    }
-
-    .menu-box input:focus {
-      outline: none;
-      border-color: #d4af37;
-    }
-
-    .menu-buttons {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-    }
-
-    .btn {
-      background: linear-gradient(180deg, #d4af37 0%, #a08020 100%);
-      border: none;
-      color: #000;
-      padding: 12px 30px;
-      font-size: 16px;
-      font-family: inherit;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.2s;
-      letter-spacing: 2px;
-    }
-
-    .btn:hover {
-      background: linear-gradient(180deg, #e4bf47 0%, #b09030 100%);
-      transform: scale(1.05);
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(180deg, #444 0%, #222 100%);
-      color: #d4af37;
-    }
-
-    .btn-secondary:hover {
-      background: linear-gradient(180deg, #555 0%, #333 100%);
-    }
-
-    /* Lobby */
-    #lobby-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(10, 10, 15, 0.95);
-      display: none;
-      z-index: 150;
-    }
-
-    .lobby-panel {
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 30px;
-      background: #14141f;
-      border: 2px solid #d4af37;
-    }
-
-    .lobby-panel h2 {
-      color: #d4af37;
-      text-align: center;
-      margin-bottom: 20px;
-      letter-spacing: 4px;
-    }
-
-    .lobby-panel h3 {
-      color: #888;
-      font-size: 14px;
-      margin: 20px 0 10px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 5px;
-    }
-
-    .players-list {
-      margin-bottom: 20px;
-    }
-
-    .player-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px;
-      background: #1a1a2a;
-      margin: 5px 0;
-      border-left: 3px solid #444;
-    }
-
-    .player-row.ready {
-      border-left-color: #0f0;
-    }
-
-    .player-name {
-      color: #fff;
-    }
-
-    .player-char {
-      color: #888;
-    }
-
-    .player-status {
-      color: #f44;
-    }
-
-    .player-row.ready .player-status {
-      color: #0f0;
-    }
-
-    .settings label {
-      display: block;
-      margin: 10px 0;
-      color: #aaa;
-    }
-
-    .settings select,
-    .settings input {
-      background: #1a1a2a;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 8px;
-      margin-left: 10px;
-    }
-
-    .characters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .char-btn {
-      background: #1a1a2a;
-      border: 1px solid #444;
-      color: #888;
-      padding: 8px 16px;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .char-btn:hover {
-      border-color: #d4af37;
-      color: #fff;
-    }
-
-    .actions {
-      margin-top: 30px;
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .btn-ready {
-      background: linear-gradient(180deg, #0a0 0%, #060 100%);
-      color: #fff;
-    }
-
-    .btn-start {
-      background: linear-gradient(180deg, #d4af37 0%, #a08020 100%);
-      color: #000;
-    }
-
-    .btn-start:disabled {
-      background: #333;
-      color: #666;
-      cursor: not-allowed;
-    }
-
-    .btn-leave {
-      background: linear-gradient(180deg, #a00 0%, #600 100%);
-      color: #fff;
-    }
-
-    /* Countdown */
-    .countdown {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .countdown h1 {
-      font-size: 150px;
-      color: #d4af37;
-      text-shadow: 0 0 50px rgba(212, 175, 55, 0.8);
-      animation: pulse 1s ease-in-out;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.5); opacity: 0; }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Loading */
-    #loading {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #d4af37;
-      font-size: 24px;
-      z-index: 300;
-    }
-
-    .loading-spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid #d4af37;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 10px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Instructions overlay */
-    #instructions {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      padding: 40px;
-      text-align: center;
-      z-index: 250;
-      border: 1px solid #d4af37;
-    }
-
-    #instructions h2 {
-      color: #d4af37;
-      margin-bottom: 20px;
-    }
-
-    #instructions p {
-      margin: 10px 0;
-      color: #aaa;
-    }
-
-    #instructions .key {
-      display: inline-block;
-      background: #333;
-      padding: 5px 10px;
-      border-radius: 3px;
-      color: #fff;
-      min-width: 40px;
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0a0a0f;color:#e0e0e0;font-family:'Courier New',monospace;overflow:hidden}
+    #game{width:100vw;height:100vh;display:block;background:#111}
+    #hud{position:fixed;bottom:20px;left:20px;font-size:16px;text-shadow:2px 2px 4px #000;pointer-events:none;z-index:100}
+    #hud .health{color:#ff4444;font-size:24px}
+    #hud .ammo{color:#ffcc00;margin-top:5px}
+    #hud .score{color:#00ccff;margin-top:15px}
+    #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,0.8);font-size:24px;pointer-events:none;z-index:100}
+    #menu{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a0f 0%,#1a1a2f 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
+    #menu h1{font-size:48px;color:#d4af37;text-shadow:0 0 20px rgba(212,175,55,0.5);margin-bottom:10px;letter-spacing:8px}
+    #menu .subtitle{color:#888;margin-bottom:40px;font-size:14px}
+    #menu .company{color:#666;font-size:12px;margin-bottom:30px}
+    .menu-box{background:rgba(20,20,30,0.9);border:2px solid #d4af37;padding:30px 50px;text-align:center}
+    .menu-box input{background:#1a1a2a;border:1px solid #444;color:#fff;padding:12px 20px;font-size:18px;font-family:inherit;text-align:center;width:200px;margin-bottom:20px;letter-spacing:4px}
+    .menu-box input::placeholder{color:#555;letter-spacing:2px}
+    .menu-box input:focus{outline:none;border-color:#d4af37}
+    .menu-buttons{display:flex;gap:15px;justify-content:center}
+    .btn{background:linear-gradient(180deg,#d4af37 0%,#a08020 100%);border:none;color:#000;padding:12px 30px;font-size:16px;font-family:inherit;font-weight:bold;cursor:pointer;transition:all 0.2s;letter-spacing:2px}
+    .btn:hover{background:linear-gradient(180deg,#e4bf47 0%,#b09030 100%);transform:scale(1.05)}
+    .btn:active{transform:scale(0.98)}
+    .btn-secondary{background:linear-gradient(180deg,#444 0%,#222 100%);color:#d4af37}
+    .btn-secondary:hover{background:linear-gradient(180deg,#555 0%,#333 100%)}
+    #lobby-container{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,15,0.95);display:none;z-index:150}
+    .lobby-panel{max-width:600px;margin:50px auto;padding:30px;background:#14141f;border:2px solid #d4af37}
+    .lobby-panel h2{color:#d4af37;text-align:center;margin-bottom:20px;letter-spacing:4px}
+    .lobby-panel h3{color:#888;font-size:14px;margin:20px 0 10px;border-bottom:1px solid #333;padding-bottom:5px}
+    .players-list{margin-bottom:20px}
+    .player-row{display:flex;justify-content:space-between;padding:10px;background:#1a1a2a;margin:5px 0;border-left:3px solid #444}
+    .player-row.ready{border-left-color:#0f0}
+    .player-name{color:#fff}
+    .player-char{color:#888}
+    .player-status{color:#f44}
+    .player-row.ready .player-status{color:#0f0}
+    .characters{display:flex;flex-wrap:wrap;gap:10px}
+    .char-btn{background:#1a1a2a;border:1px solid #444;color:#888;padding:8px 16px;cursor:pointer;font-family:inherit}
+    .char-btn:hover{border-color:#d4af37;color:#fff}
+    .actions{margin-top:30px;display:flex;gap:10px;justify-content:center}
+    .btn-ready{background:linear-gradient(180deg,#0a0 0%,#060 100%);color:#fff}
+    .btn-leave{background:linear-gradient(180deg,#a00 0%,#600 100%);color:#fff}
+    .btn-start:disabled{background:#333;color:#666;cursor:not-allowed}
+    .lobby-item{background:#1a1a2a;padding:10px;margin:5px 0;cursor:pointer;border-left:3px solid #d4af37}
+    .lobby-item:hover{background:#252535}
+    .lobby-item .code{color:#d4af37;font-weight:bold}
+    .lobby-item .info{color:#888;font-size:12px}
+    #loading{display:block;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#d4af37;font-size:24px;z-index:300}
+    .loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid #d4af37;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #instructions{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);padding:40px;text-align:center;z-index:250;border:1px solid #d4af37}
+    #instructions h2{color:#d4af37;margin-bottom:20px}
+    #instructions p{margin:10px 0;color:#aaa}
+    #instructions .key{display:inline-block;background:#333;padding:5px 10px;border-radius:3px;color:#fff;min-width:40px}
   </style>
 </head>
 <body>
-  <!-- Game Canvas -->
   <canvas id="game"></canvas>
-
-  <!-- HUD -->
   <div id="hud"></div>
-
-  <!-- Crosshair -->
   <div id="crosshair">+</div>
 
-  <!-- Main Menu -->
-  <div id="menu">
+  <div id="menu" style="display:none">
     <h1>GOLDEN SHOWER</h1>
     <p class="subtitle">GoldenEye 007 Multiplayer Reconstruction</p>
     <p class="company">by Konomi Systems</p>
-
     <div class="menu-box">
-      <input type="text" id="lobby-code" placeholder="LOBBY CODE" maxlength="6">
-      <div class="menu-buttons">
-        <button class="btn" onclick="hostGame()">HOST</button>
-        <button class="btn btn-secondary" onclick="joinGame()">JOIN</button>
+      <div id="available-lobbies">
+        <h3 style="color:#888;margin-bottom:15px;border-bottom:1px solid #333;padding-bottom:10px">AVAILABLE GAMES</h3>
+        <div id="lobby-list" style="max-height:150px;overflow-y:auto;margin-bottom:15px">
+          <p style="color:#555;font-size:12px">Searching for games...</p>
+        </div>
+      </div>
+      <div style="border-top:1px solid #333;padding-top:15px;margin-top:10px">
+        <input type="text" id="lobby-code" placeholder="LOBBY CODE" maxlength="6">
+        <div class="menu-buttons">
+          <button class="btn" onclick="hostGame()">HOST</button>
+          <button class="btn btn-secondary" onclick="joinGame()">JOIN</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Lobby Container -->
   <div id="lobby-container"></div>
-
-  <!-- Loading Overlay -->
-  <div id="loading">
-    <span class="loading-spinner"></span>
-    Loading game from docs...
-  </div>
-
-  <!-- Instructions -->
+  <div id="loading"><span class="loading-spinner"></span>Loading from docs...</div>
   <div id="instructions">
     <h2>CONTROLS</h2>
     <p><span class="key">W A S D</span> Move</p>
@@ -427,130 +93,143 @@
     <p><span class="key">Left Click</span> Shoot</p>
     <p><span class="key">Space</span> Jump</p>
     <p><span class="key">1-6</span> Switch Weapon</p>
-    <br>
-    <p>Click to lock mouse and play</p>
+    <br><p>Click to lock mouse and play</p>
   </div>
 
-  <!-- Markdown Runner -->
-  <script src="runner/markdown-runner.js"></script>
+  <!-- Markdown Runner from /core -->
+  <script src="../../core/markdown-runner.js"></script>
 
-  <!-- Game Logic -->
   <script>
+    // Global namespace
+    window.GS = {};
+
+    // Module manifest - order matters for dependencies
+    const MODULES = [
+      // Engine core
+      ['vec3', 'engine/vec3.md'],
+      ['mat4', 'engine/mat4.md'],
+      ['input', 'engine/input.md'],
+      ['camera', 'engine/camera.md'],
+      ['gameloop', 'engine/gameloop.md'],
+      ['renderer', 'engine/renderer.md'],
+      ['mesh', 'engine/mesh.md'],
+      // Data
+      ['characters', 'characters/_index.md'],
+      ['weapons', 'weapons/_index.md'],
+      ['maps', 'maps/_index.md'],
+      // P2P Networking (KQTT - must load before network)
+      ['kqtt', 'multiplayer/kqtt.md'],
+      // Multiplayer
+      ['player', 'multiplayer/player.md'],
+      ['network', 'multiplayer/network.md'],
+      ['statesync', 'multiplayer/statesync.md'],
+      ['discovery', 'multiplayer/discovery.md'],
+      ['lobby', 'multiplayer/lobby.md'],
+      ['lobbyui', 'multiplayer/lobby-ui.md'],
+      // Game
+      ['game', 'engine/game.md']
+    ];
+
     let lobby = null;
+    let lobbyUI = null;
     let game = null;
-    let gameLoaded = false;
+    let discovery = null;
 
-    // Load game code from markdown docs
-    async function loadGameCode() {
-      if (gameLoaded) return;
-
-      document.getElementById('loading').style.display = 'block';
-
-      try {
-        await GoldenShower.runAll([
-          'engine/core.md',
-          'multiplayer/network.md',
-          'multiplayer/lobby.md',
-          'multiplayer/game.md'
-        ]);
-        gameLoaded = true;
-        console.log('[Main] Game code loaded from documentation');
-      } catch (err) {
-        console.error('[Main] Failed to load game:', err);
-        alert('Failed to load game. Please refresh and try again.');
+    // Load all modules via markdown runner
+    async function loadModules() {
+      const runner = new MarkdownRunner();
+      for (const [name, path] of MODULES) {
+        try {
+          const blocks = await runner.loadModule(name, path);
+          runner.exec(blocks);
+          console.log(`[Loader] Loaded: ${name}`);
+        } catch (e) {
+          console.warn(`[Loader] Failed to load ${name}:`, e);
+        }
       }
+      return runner;
+    }
 
-      document.getElementById('loading').style.display = 'none';
+    // Initialize lobby discovery
+    function initDiscovery() {
+      discovery = new GS.LobbyDiscovery();
+      discovery.on('update', (lobbies) => {
+        const list = document.getElementById('lobby-list');
+        if (lobbies.length === 0) {
+          list.innerHTML = '<p style="color:#555;font-size:12px">No games available - HOST to create one</p>';
+        } else {
+          list.innerHTML = lobbies.map(l => `
+            <div class="lobby-item" onclick="joinLobby('${l.code}')">
+              <span class="code">${l.code}</span>
+              <span class="info">${l.count}/${l.max} players - ${l.host}</span>
+            </div>
+          `).join('');
+        }
+      });
+    }
+
+    // Join a lobby from the list
+    function joinLobby(code) {
+      document.getElementById('lobby-code').value = code;
+      joinGame();
     }
 
     // Host a new game
-    async function hostGame() {
-      await loadGameCode();
-
-      lobby = new GoldenShower.Lobby();
+    function hostGame() {
+      lobby = new GS.Lobby();
       const code = lobby.create();
-
       document.getElementById('lobby-code').value = code;
       document.getElementById('menu').style.display = 'none';
       document.getElementById('lobby-container').style.display = 'block';
-
-      // Setup lobby UI
-      const lobbyUI = new GoldenShower.LobbyUI(document.getElementById('lobby-container'));
+      lobbyUI = new GS.LobbyUI(document.getElementById('lobby-container'));
       lobbyUI.bind(lobby);
       lobbyUI.render();
-
-      // Handle game launch
       lobby.on('game-launch', (data) => launchGame(data));
-
       console.log(`[Main] Hosting lobby: ${code}`);
     }
 
     // Join existing game
-    async function joinGame() {
+    function joinGame() {
       const code = document.getElementById('lobby-code').value.trim().toUpperCase();
       if (!code || code.length !== 6) {
         alert('Please enter a valid 6-character lobby code');
         return;
       }
-
-      await loadGameCode();
-
-      lobby = new GoldenShower.Lobby();
+      lobby = new GS.Lobby();
       lobby.join(code);
-
       document.getElementById('menu').style.display = 'none';
       document.getElementById('lobby-container').style.display = 'block';
-
-      // Setup lobby UI
-      const lobbyUI = new GoldenShower.LobbyUI(document.getElementById('lobby-container'));
+      lobbyUI = new GS.LobbyUI(document.getElementById('lobby-container'));
       lobbyUI.bind(lobby);
       lobbyUI.render();
-
-      // Handle game launch
       lobby.on('game-launch', (data) => launchGame(data));
-
       console.log(`[Main] Joining lobby: ${code}`);
     }
 
     // Launch the game
     async function launchGame(data) {
       console.log('[Main] Launching game with:', data);
-
       document.getElementById('lobby-container').style.display = 'none';
       document.getElementById('instructions').style.display = 'block';
-
-      // Create game
       const canvas = document.getElementById('game');
-      game = new GoldenShower.Game(canvas);
+      game = new GS.Game(canvas);
       await game.init();
-
-      // Add players
       data.players.forEach(p => {
-        const isLocal = p.id === lobby.localPlayerId;
+        const isLocal = p.id === lobby.localId;
         const player = game.addPlayer(p.id, isLocal);
         player.name = p.name;
-        player.color = GoldenShower.Characters[p.character].color;
+        player.color = GS.Characters[p.character]?.color || [0.5,0.5,0.5];
       });
-
-      // Apply settings
-      game.gameMode = data.settings.gameMode;
-      game.scoreLimit = data.settings.scoreLimit;
-      game.timeLimit = data.settings.timeLimit * 60;
-
-      // Start game loop
-      const loop = new GoldenShower.GameLoop(
+      game.mode = data.settings.mode;
+      game.limit = data.settings.limit;
+      game.time = data.settings.time * 60;
+      const loop = new GS.GameLoop(
         (dt) => game.update(dt),
-        (alpha) => {
-          game.render(alpha);
-          updateHUD();
-        }
+        (alpha) => { game.render(alpha); updateHUD(); }
       );
-
-      // Hide instructions on click
       canvas.addEventListener('click', () => {
         document.getElementById('instructions').style.display = 'none';
       });
-
       loop.start();
       game.startMatch();
     }
@@ -558,69 +237,57 @@
     // Update HUD display
     function updateHUD() {
       if (!game || !game.localPlayer) return;
-
       const p = game.localPlayer;
-      const weapon = GoldenShower.Weapons[p.weapon];
-
+      const weapon = GS.Weapons[p.weapon];
       document.getElementById('hud').innerHTML = `
         <div class="health">HP: ${Math.max(0, p.health)}</div>
-        <div class="ammo">${weapon.name}: ${p.weapon === 0 ? '∞' : p.ammo[p.weapon]}</div>
-        <div class="score">
-          KILLS: ${p.kills} | DEATHS: ${p.deaths}
-        </div>
+        <div class="ammo">${weapon?.name||'?'}: ${p.weapon === 0 ? '∞' : p.ammo[p.weapon]}</div>
+        <div class="score">KILLS: ${p.kills} | DEATHS: ${p.deaths}</div>
       `;
     }
 
     // Quick play (single player testing)
     async function quickPlay() {
-      await loadGameCode();
-
       const canvas = document.getElementById('game');
-      game = new GoldenShower.Game(canvas);
+      game = new GS.Game(canvas);
       await game.init();
-
       game.addPlayer('local', true);
-
       document.getElementById('menu').style.display = 'none';
       document.getElementById('instructions').style.display = 'block';
-
       canvas.addEventListener('click', () => {
         document.getElementById('instructions').style.display = 'none';
       });
-
-      const loop = new GoldenShower.GameLoop(
+      const loop = new GS.GameLoop(
         (dt) => game.update(dt),
-        (alpha) => {
-          game.render(alpha);
-          updateHUD();
-        }
+        (alpha) => { game.render(alpha); updateHUD(); }
       );
-
       loop.start();
       game.startMatch();
     }
 
-    // Handle Enter key in lobby code input
-    document.getElementById('lobby-code').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const code = e.target.value.trim();
-        if (code.length === 6) {
-          joinGame();
-        } else if (code === '') {
-          hostGame();
+    // Initialize
+    (async () => {
+      console.log('[Golden Shower] Loading from markdown docs...');
+      await loadModules();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('menu').style.display = 'flex';
+      initDiscovery();
+      // Keybindings
+      document.getElementById('lobby-code').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const code = e.target.value.trim();
+          if (code.length === 6) joinGame();
+          else if (code === '') hostGame();
         }
-      }
-    });
-
-    // Debug: Quick play with Q key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'q' && document.getElementById('menu').style.display !== 'none') {
-        quickPlay();
-      }
-    });
-
-    console.log('[Golden Shower] Ready - by Konomi Systems');
-    console.log('[Golden Shower] Press Q for quick single-player test');
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'q' && document.getElementById('menu').style.display !== 'none') {
+          quickPlay();
+        }
+      });
+      console.log('[Golden Shower] Ready - by Konomi Systems');
+      console.log('[Golden Shower] Press Q for quick single-player test');
+    })();
   </script>
 </body>
 </html>
