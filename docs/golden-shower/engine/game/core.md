@@ -43,7 +43,7 @@ class Game {
     this.renderer.resize();
     window.addEventListener('resize', () => this.renderer.resize());
     const gl = this.renderer.gl;
-    this.floor = GS.Mesh.box(gl, 60, 0.5, 60, [0.25, 0.25, 0.3]);
+    this.floor = GS.Mesh.box(gl, 90, 0.5, 90, [0.25, 0.25, 0.3]);
     this._createArena(gl);
     this.playerMesh = GS.Mesh.box(gl, 0.6, 1.8, 0.6, [1, 1, 1]);
     this._setupChatInput();

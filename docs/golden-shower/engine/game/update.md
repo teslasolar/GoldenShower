@@ -36,8 +36,9 @@ Object.assign(GS.Game.prototype, {
     if (this.input.isDown('KeyD')) newPos.add(right.clone().scale(speed));
 
     if (!this._checkCollision(newPos)) p.pos = newPos;
-    p.pos.x = Math.max(-28, Math.min(28, p.pos.x));
-    p.pos.z = Math.max(-28, Math.min(28, p.pos.z));
+    // Expanded bounds for dock areas
+    p.pos.x = Math.max(-42, Math.min(42, p.pos.x));
+    p.pos.z = Math.max(-42, Math.min(42, p.pos.z));
 
     if (this.input.isDown('Space') && p.pos.y <= 0.1) p.vel.y = 8;
     p.vel.y -= 20 * dt;
