@@ -46,6 +46,8 @@ class Game {
     this.floor = GS.Mesh.box(gl, 90, 0.5, 90, [0.25, 0.25, 0.3]);
     this._createArena(gl);
     this.playerMesh = GS.Mesh.box(gl, 0.6, 1.8, 0.6, [1, 1, 1]);
+    this._initPickups();
+    this._initSpawns();
     this._setupChatInput();
     this.canvas.addEventListener('click', () => this.shoot());
     console.log('[Game] Initialized');

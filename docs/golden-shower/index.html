@@ -13,10 +13,42 @@
     #hud .ammo{color:#ffcc00;margin-top:5px}
     #hud .score{color:#00ccff;margin-top:15px}
     #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,0.8);font-size:24px;pointer-events:none;z-index:100}
-    #menu{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a0f 0%,#1a1a2f 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
-    #menu h1{font-size:48px;color:#d4af37;text-shadow:0 0 20px rgba(212,175,55,0.5);margin-bottom:10px;letter-spacing:8px}
-    #menu .subtitle{color:#888;margin-bottom:40px;font-size:14px}
-    #menu .company{color:#666;font-size:12px;margin-bottom:30px}
+    #menu{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a0f 0%,#1a1a2f 100%);display:flex;flex-direction:row;align-items:stretch;justify-content:center;z-index:200}
+    .menu-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+    .menu-main h1{font-size:48px;color:#d4af37;text-shadow:0 0 20px rgba(212,175,55,0.5);margin-bottom:10px;letter-spacing:8px}
+    .menu-main .subtitle{color:#888;margin-bottom:40px;font-size:14px}
+    .menu-main .company{color:#666;font-size:12px;margin-bottom:30px}
+    /* Global Chat Sidebar */
+    #global-chat{width:300px;background:#0d0d14;border-left:1px solid #333;display:flex;flex-direction:column}
+    #global-chat .chat-header{padding:15px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}
+    #global-chat .chat-header h3{color:#d4af37;font-size:14px;letter-spacing:2px}
+    #global-chat .online-count{color:#0f0;font-size:11px}
+    #global-chat .chat-messages{flex:1;overflow-y:auto;padding:10px;font-size:12px}
+    #global-chat .chat-msg{margin:5px 0;padding:5px;background:#14141f;border-radius:3px}
+    #global-chat .chat-msg .name{color:#d4af37;font-weight:bold}
+    #global-chat .chat-msg .time{color:#555;font-size:10px;float:right}
+    #global-chat .chat-msg .text{color:#ccc;margin-top:3px}
+    #global-chat .chat-msg.system{background:#1a1a0a;border-left:2px solid #d4af37}
+    #global-chat .chat-input{padding:10px;border-top:1px solid #333;display:flex;gap:5px}
+    #global-chat .chat-input input{flex:1;background:#1a1a2a;border:1px solid #444;color:#fff;padding:8px;font-family:inherit;font-size:12px}
+    #global-chat .chat-input input:focus{outline:none;border-color:#d4af37}
+    #global-chat .chat-input button{background:#d4af37;border:none;color:#000;padding:8px 12px;cursor:pointer;font-weight:bold}
+    /* Kill Feed */
+    #kill-feed{position:fixed;top:20px;right:20px;width:250px;font-size:12px;z-index:100;pointer-events:none}
+    #kill-feed .kill{background:rgba(0,0,0,0.7);padding:5px 10px;margin:3px 0;border-radius:3px;animation:fadeIn 0.3s}
+    #kill-feed .killer{color:#ff4444}
+    #kill-feed .victim{color:#4444ff}
+    /* Minimap */
+    #minimap{position:fixed;bottom:20px;right:20px;width:150px;height:150px;background:rgba(0,0,0,0.7);border:1px solid #444;z-index:100}
+    #minimap canvas{width:100%;height:100%}
+    /* Scoreboard */
+    #scoreboard{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,15,0.95);border:2px solid #d4af37;padding:20px;min-width:400px;display:none;z-index:250}
+    #scoreboard h2{color:#d4af37;text-align:center;margin-bottom:15px;letter-spacing:4px}
+    #scoreboard table{width:100%;border-collapse:collapse}
+    #scoreboard th{color:#888;text-align:left;padding:8px;border-bottom:1px solid #333}
+    #scoreboard td{padding:8px;border-bottom:1px solid #222}
+    #scoreboard .local{color:#d4af37}
+    @keyframes fadeIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
     .menu-box{background:rgba(20,20,30,0.9);border:2px solid #d4af37;padding:30px 50px;text-align:center}
     .menu-box input{background:#1a1a2a;border:1px solid #444;color:#fff;padding:12px 20px;font-size:18px;font-family:inherit;text-align:center;width:200px;margin-bottom:20px;letter-spacing:4px}
     .menu-box input::placeholder{color:#555;letter-spacing:2px}
@@ -64,24 +96,53 @@
   <div id="crosshair">+</div>
 
   <div id="menu" style="display:none">
-    <h1>GOLDEN SHOWER</h1>
-    <p class="subtitle">GoldenEye 007 Multiplayer Reconstruction</p>
-    <p class="company">by Konomi Systems</p>
-    <div class="menu-box">
-      <div id="available-lobbies">
-        <h3 style="color:#888;margin-bottom:15px;border-bottom:1px solid #333;padding-bottom:10px">AVAILABLE GAMES</h3>
-        <div id="lobby-list" style="max-height:150px;overflow-y:auto;margin-bottom:15px">
-          <p style="color:#555;font-size:12px">Searching for games...</p>
+    <div class="menu-main">
+      <h1>GOLDEN SHOWER</h1>
+      <p class="subtitle">GoldenEye 007 Multiplayer Reconstruction</p>
+      <p class="company">by Konomi Systems</p>
+      <div class="menu-box">
+        <div id="available-lobbies">
+          <h3 style="color:#888;margin-bottom:15px;border-bottom:1px solid #333;padding-bottom:10px">AVAILABLE GAMES</h3>
+          <div id="lobby-list" style="max-height:150px;overflow-y:auto;margin-bottom:15px">
+            <p style="color:#555;font-size:12px">Searching for games...</p>
+          </div>
         </div>
-      </div>
-      <div style="border-top:1px solid #333;padding-top:15px;margin-top:10px">
-        <input type="text" id="lobby-code" placeholder="LOBBY CODE" maxlength="6">
-        <div class="menu-buttons">
-          <button class="btn" onclick="hostGame()">HOST</button>
-          <button class="btn btn-secondary" onclick="joinGame()">JOIN</button>
+        <div style="border-top:1px solid #333;padding-top:15px;margin-top:10px">
+          <input type="text" id="lobby-code" placeholder="LOBBY CODE" maxlength="6">
+          <div class="menu-buttons">
+            <button class="btn" onclick="hostGame()">HOST</button>
+            <button class="btn btn-secondary" onclick="joinGame()">JOIN</button>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding-top:15px;border-top:1px solid #333">
+          <button class="btn btn-secondary" onclick="quickPlay()" style="width:100%">QUICK PLAY (Solo)</button>
         </div>
       </div>
     </div>
+    <!-- Global Chat Sidebar -->
+    <div id="global-chat">
+      <div class="chat-header">
+        <h3>GLOBAL CHAT</h3>
+        <span class="online-count" id="online-count">0 online</span>
+      </div>
+      <div class="chat-messages" id="global-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="global-chat-input" placeholder="Type message..." maxlength="200">
+        <button onclick="sendGlobalChat()">SEND</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-Game UI -->
+  <div id="kill-feed"></div>
+  <div id="minimap"><canvas id="minimap-canvas" width="150" height="150"></canvas></div>
+  <div id="scoreboard">
+    <h2>SCOREBOARD</h2>
+    <table>
+      <thead><tr><th>Player</th><th>K</th><th>D</th><th>Score</th></tr></thead>
+      <tbody id="scoreboard-body"></tbody>
+    </table>
+    <p style="text-align:center;color:#555;margin-top:15px;font-size:11px">Press TAB to close</p>
   </div>
 
   <div id="lobby-container"></div>
@@ -140,6 +201,8 @@
       // Game (modular UDTs)
       ['game-core', 'engine/game/core.md'],
       ['game-arena', 'engine/game/arena.md'],
+      ['game-pickups', 'engine/game/pickups.md'],
+      ['game-spawns', 'engine/game/spawns.md'],
       ['game-player', 'engine/game/player.md'],
       ['game-update', 'engine/game/update.md'],
       ['game-combat', 'engine/game/combat.md'],
@@ -152,6 +215,178 @@
     let lobbyUI = null;
     let game = null;
     let discovery = null;
+    let globalChat = null;
+    let playerName = 'Agent_' + Math.random().toString(36).substr(2, 4).toUpperCase();
+
+    // Global Chat System (uses KQTT for P2P)
+    class GlobalChatSystem {
+      constructor() {
+        this.kqtt = null;
+        this.messages = [];
+        this.peers = new Set();
+        this.maxMessages = 50;
+      }
+
+      async init() {
+        if (!GS.KQTT) return;
+        this.kqtt = new GS.KQTT();
+
+        // Subscribe to global chat topic
+        this.kqtt.subscribe('gs/chat/#', (msg) => {
+          this.addMessage(msg.payload);
+        });
+
+        this.kqtt.subscribe('gs/presence/#', (msg) => {
+          if (msg.payload.type === 'join') {
+            this.peers.add(msg.payload.name);
+            this.addMessage({ name: 'SYSTEM', text: `${msg.payload.name} joined`, system: true });
+          } else if (msg.payload.type === 'leave') {
+            this.peers.delete(msg.payload.name);
+            this.addMessage({ name: 'SYSTEM', text: `${msg.payload.name} left`, system: true });
+          }
+          this.updateOnlineCount();
+        });
+
+        // Announce presence
+        this.kqtt.publish('gs/presence/join', { type: 'join', name: playerName }, { retain: false });
+        this.addMessage({ name: 'SYSTEM', text: 'Connected to global chat (P2P)', system: true });
+        this.updateOnlineCount();
+      }
+
+      send(text) {
+        if (!text.trim() || !this.kqtt) return;
+        const msg = { name: playerName, text: text.trim(), time: Date.now() };
+        this.kqtt.publish('gs/chat/msg', msg);
+        this.addMessage(msg);
+      }
+
+      addMessage(msg) {
+        this.messages.push(msg);
+        if (this.messages.length > this.maxMessages) this.messages.shift();
+        this.render();
+      }
+
+      updateOnlineCount() {
+        const count = this.kqtt ? this.kqtt.peers.size + 1 : 1;
+        document.getElementById('online-count').textContent = `${count} online`;
+      }
+
+      render() {
+        const el = document.getElementById('global-messages');
+        el.innerHTML = this.messages.map(m => `
+          <div class="chat-msg ${m.system ? 'system' : ''}">
+            <span class="name">${m.name}</span>
+            ${m.time ? `<span class="time">${new Date(m.time).toLocaleTimeString()}</span>` : ''}
+            <div class="text">${this._escape(m.text)}</div>
+          </div>
+        `).join('');
+        el.scrollTop = el.scrollHeight;
+      }
+
+      _escape(s) {
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+    }
+
+    function sendGlobalChat() {
+      const input = document.getElementById('global-chat-input');
+      if (globalChat && input.value.trim()) {
+        globalChat.send(input.value);
+        input.value = '';
+      }
+    }
+
+    // Kill Feed System
+    const killFeed = {
+      kills: [],
+      add(killer, victim, weapon) {
+        this.kills.push({ killer, victim, weapon, time: Date.now() });
+        if (this.kills.length > 5) this.kills.shift();
+        this.render();
+      },
+      render() {
+        const el = document.getElementById('kill-feed');
+        const now = Date.now();
+        this.kills = this.kills.filter(k => now - k.time < 5000);
+        el.innerHTML = this.kills.map(k => `
+          <div class="kill">
+            <span class="killer">${k.killer}</span>
+            <span style="color:#888">[${k.weapon}]</span>
+            <span class="victim">${k.victim}</span>
+          </div>
+        `).join('');
+      }
+    };
+
+    // Minimap System
+    const minimap = {
+      canvas: null,
+      ctx: null,
+      init() {
+        this.canvas = document.getElementById('minimap-canvas');
+        this.ctx = this.canvas.getContext('2d');
+      },
+      render(game) {
+        if (!this.ctx || !game) return;
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const scale = 1.5;
+
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, w, h);
+
+        // Draw walls
+        ctx.fillStyle = '#444';
+        for (const wall of (game.walls || [])) {
+          const x = w/2 + wall.pos.x * scale;
+          const z = h/2 + wall.pos.z * scale;
+          const ww = (wall.width || 1) * scale;
+          const wd = (wall.depth || 1) * scale;
+          ctx.fillRect(x - ww/2, z - wd/2, ww, wd);
+        }
+
+        // Draw players
+        for (const [id, p] of (game.players || new Map())) {
+          const x = w/2 + p.pos.x * scale;
+          const z = h/2 + p.pos.z * scale;
+          ctx.fillStyle = p.local ? '#0f0' : (p.alive ? '#f00' : '#555');
+          ctx.beginPath();
+          ctx.arc(x, z, 3, 0, Math.PI * 2);
+          ctx.fill();
+          // Direction indicator for local
+          if (p.local) {
+            ctx.strokeStyle = '#0f0';
+            ctx.beginPath();
+            ctx.moveTo(x, z);
+            ctx.lineTo(x + Math.sin(p.yaw) * 8, z + Math.cos(p.yaw) * 8);
+            ctx.stroke();
+          }
+        }
+      }
+    };
+
+    // Scoreboard System
+    const scoreboard = {
+      visible: false,
+      toggle(show) {
+        this.visible = show;
+        document.getElementById('scoreboard').style.display = show ? 'block' : 'none';
+        if (show) this.render();
+      },
+      render() {
+        if (!game) return;
+        const players = Array.from(game.players.values()).sort((a, b) => b.kills - a.kills);
+        document.getElementById('scoreboard-body').innerHTML = players.map(p => `
+          <tr class="${p.local ? 'local' : ''}">
+            <td>${p.name || p.id}</td>
+            <td>${p.kills}</td>
+            <td>${p.deaths}</td>
+            <td>${p.kills * 100 - p.deaths * 50}</td>
+          </tr>
+        `).join('');
+      }
+    };
 
     // Load all modules via markdown runner
     async function loadModules() {
@@ -262,6 +497,10 @@
         <div class="ammo">${weapon?.name||'?'}: ${p.weapon === 0 ? '∞' : p.ammo[p.weapon]}</div>
         <div class="score">KILLS: ${p.kills} | DEATHS: ${p.deaths}</div>
       `;
+      // Update minimap
+      minimap.render(game);
+      // Update kill feed
+      killFeed.render();
     }
 
     // Quick play (single player testing)
@@ -290,7 +529,20 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('menu').style.display = 'flex';
       initDiscovery();
-      // Keybindings
+      minimap.init();
+
+      // Initialize global chat
+      globalChat = new GlobalChatSystem();
+      await globalChat.init();
+
+      // Global chat input handler
+      document.getElementById('global-chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          sendGlobalChat();
+        }
+      });
+
+      // Lobby code input
       document.getElementById('lobby-code').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
           const code = e.target.value.trim();
@@ -298,11 +550,26 @@
           else if (code === '') hostGame();
         }
       });
+
+      // Global keybindings
       document.addEventListener('keydown', (e) => {
+        // Quick play from menu
         if (e.key === 'q' && document.getElementById('menu').style.display !== 'none') {
           quickPlay();
         }
+        // Scoreboard toggle (Tab)
+        if (e.key === 'Tab' && game) {
+          e.preventDefault();
+          scoreboard.toggle(true);
+        }
       });
+
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Tab') {
+          scoreboard.toggle(false);
+        }
+      });
+
       console.log('[Golden Shower] Ready - by Konomi Systems');
       console.log('[Golden Shower] Press Q for quick single-player test');
     })();

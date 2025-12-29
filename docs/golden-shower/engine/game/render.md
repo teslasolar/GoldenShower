@@ -39,6 +39,9 @@ Object.assign(GS.Game.prototype, {
       this.playerMesh?.draw();
     }
 
+    // Render pickups
+    this._renderPickups();
+
     this._renderHUD();
   },
 

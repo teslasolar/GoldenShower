@@ -17,7 +17,7 @@ Object.assign(GS.Game.prototype, {
 
     if (!p.alive) {
       p.respawnTime -= dt;
-      if (p.respawnTime <= 0) this._respawn(p);
+      if (p.respawnTime <= 0) this._respawnAtPoint(p);
       this.camera.pos = p.pos.clone();
       this.camera.pos.y += 1.7;
       this.input.update();
@@ -54,6 +54,10 @@ Object.assign(GS.Game.prototype, {
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     if (this.hitMarkerTime > 0) this.hitMarkerTime -= dt;
     if (this.damageIndicatorTime > 0) this.damageIndicatorTime -= dt;
+
+    // Update pickups
+    this._updatePickups(dt);
+
     if (this.network) this.stateSync.update(p, this.network);
     this.input.update();
   }
