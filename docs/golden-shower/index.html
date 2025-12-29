@@ -84,7 +84,8 @@
     #loading{display:block;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#d4af37;font-size:24px;z-index:300}
     .loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid #d4af37;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px}
     @keyframes spin{to{transform:rotate(360deg)}}
-    #instructions{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);padding:40px;text-align:center;z-index:250;border:1px solid #d4af37}
+    #instructions{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);text-align:center;z-index:250;cursor:pointer;display:none;align-items:center;justify-content:center;flex-direction:column}
+    #instructions .box{background:rgba(0,0,0,0.9);padding:40px;border:1px solid #d4af37}
     #instructions h2{color:#d4af37;margin-bottom:20px}
     #instructions p{margin:10px 0;color:#aaa}
     #instructions .key{display:inline-block;background:#333;padding:5px 10px;border-radius:3px;color:#fff;min-width:40px}
@@ -147,14 +148,18 @@
 
   <div id="lobby-container"></div>
   <div id="loading"><span class="loading-spinner"></span>Loading from docs...</div>
-  <div id="instructions">
-    <h2>CONTROLS</h2>
-    <p><span class="key">W A S D</span> Move</p>
-    <p><span class="key">Mouse</span> Look</p>
-    <p><span class="key">Left Click</span> Shoot</p>
-    <p><span class="key">Space</span> Jump</p>
-    <p><span class="key">1-6</span> Switch Weapon</p>
-    <br><p>Click to lock mouse and play</p>
+  <div id="instructions" onclick="startPlaying()">
+    <div class="box">
+      <h2>CONTROLS</h2>
+      <p><span class="key">W A S D</span> Move</p>
+      <p><span class="key">Mouse</span> Look</p>
+      <p><span class="key">Left Click</span> Shoot</p>
+      <p><span class="key">Space</span> Jump</p>
+      <p><span class="key">1-7</span> Switch Weapon</p>
+      <p><span class="key">Enter</span> Chat</p>
+      <p><span class="key">Tab</span> Scoreboard</p>
+      <br><p style="color:#d4af37;font-size:16px">CLICK ANYWHERE TO PLAY</p>
+    </div>
   </div>
 
   <!-- Markdown Runner from /core -->
@@ -228,35 +233,50 @@
       }
 
       async init() {
-        if (!GS.KQTT) return;
-        this.kqtt = new GS.KQTT();
+        // Show welcome message regardless of KQTT status
+        this.addMessage({ name: 'SYSTEM', text: 'Welcome to Golden Shower Chat', system: true });
 
-        // Subscribe to global chat topic
-        this.kqtt.subscribe('gs/chat/#', (msg) => {
-          this.addMessage(msg.payload);
-        });
-
-        this.kqtt.subscribe('gs/presence/#', (msg) => {
-          if (msg.payload.type === 'join') {
-            this.peers.add(msg.payload.name);
-            this.addMessage({ name: 'SYSTEM', text: `${msg.payload.name} joined`, system: true });
-          } else if (msg.payload.type === 'leave') {
-            this.peers.delete(msg.payload.name);
-            this.addMessage({ name: 'SYSTEM', text: `${msg.payload.name} left`, system: true });
-          }
+        if (!GS.KQTT) {
+          this.addMessage({ name: 'SYSTEM', text: 'Local mode - P2P not available', system: true });
           this.updateOnlineCount();
-        });
+          return;
+        }
 
-        // Announce presence
-        this.kqtt.publish('gs/presence/join', { type: 'join', name: playerName }, { retain: false });
-        this.addMessage({ name: 'SYSTEM', text: 'Connected to global chat (P2P)', system: true });
+        try {
+          this.kqtt = new GS.KQTT();
+
+          // Subscribe to global chat topic
+          this.kqtt.subscribe('gs/chat/#', (msg) => {
+            this.addMessage(msg.payload);
+          });
+
+          this.kqtt.subscribe('gs/presence/#', (msg) => {
+            if (msg.payload.type === 'join') {
+              this.peers.add(msg.payload.name);
+              this.addMessage({ name: 'SYSTEM', text: `${msg.payload.name} joined`, system: true });
+            } else if (msg.payload.type === 'leave') {
+              this.peers.delete(msg.payload.name);
+              this.addMessage({ name: 'SYSTEM', text: `${msg.payload.name} left`, system: true });
+            }
+            this.updateOnlineCount();
+          });
+
+          // Announce presence
+          this.kqtt.publish('gs/presence/join', { type: 'join', name: playerName }, { retain: false });
+          this.addMessage({ name: 'SYSTEM', text: 'Connected to P2P network', system: true });
+        } catch (e) {
+          console.warn('[GlobalChat] KQTT init failed:', e);
+          this.addMessage({ name: 'SYSTEM', text: 'P2P connection failed', system: true });
+        }
         this.updateOnlineCount();
       }
 
       send(text) {
-        if (!text.trim() || !this.kqtt) return;
+        if (!text.trim()) return;
         const msg = { name: playerName, text: text.trim(), time: Date.now() };
-        this.kqtt.publish('gs/chat/msg', msg);
+        if (this.kqtt) {
+          this.kqtt.publish('gs/chat/msg', msg);
+        }
         this.addMessage(msg);
       }
 
@@ -293,6 +313,15 @@
       if (globalChat && input.value.trim()) {
         globalChat.send(input.value);
         input.value = '';
+      }
+    }
+
+    // Start playing - hide instructions and lock pointer for FPS controls
+    function startPlaying() {
+      document.getElementById('instructions').style.display = 'none';
+      const canvas = document.getElementById('game');
+      if (canvas.requestPointerLock) {
+        canvas.requestPointerLock();
       }
     }
 
@@ -463,7 +492,7 @@
     async function launchGame(data) {
       console.log('[Main] Launching game with:', data);
       document.getElementById('lobby-container').style.display = 'none';
-      document.getElementById('instructions').style.display = 'block';
+      document.getElementById('instructions').style.display = 'flex';
       const canvas = document.getElementById('game');
       game = new GS.Game(canvas);
       await game.init();
@@ -480,9 +509,6 @@
         (dt) => game.update(dt),
         (alpha) => { game.render(alpha); updateHUD(); }
       );
-      canvas.addEventListener('click', () => {
-        document.getElementById('instructions').style.display = 'none';
-      });
       loop.start();
       game.startMatch();
     }
@@ -510,10 +536,7 @@
       await game.init();
       game.addPlayer('local', true);
       document.getElementById('menu').style.display = 'none';
-      document.getElementById('instructions').style.display = 'block';
-      canvas.addEventListener('click', () => {
-        document.getElementById('instructions').style.display = 'none';
-      });
+      document.getElementById('instructions').style.display = 'flex';
       const loop = new GS.GameLoop(
         (dt) => game.update(dt),
         (alpha) => { game.render(alpha); updateHUD(); }
