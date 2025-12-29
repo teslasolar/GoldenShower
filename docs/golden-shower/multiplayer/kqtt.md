@@ -696,3 +696,324 @@ class KQTTLocalBridge {
 
 GS.KQTTLocalBridge = KQTTLocalBridge;
 ```
+
+## WebTorrent Transport (Open P2P)
+
+Open P2P mesh using WebTorrent for public room discovery. No signaling server needed - peers find each other via BitTorrent DHT.
+
+```javascript
+/**
+ * KQTT WebTorrent Transport
+ * Open P2P mesh via BitTorrent DHT - peers join by room code
+ * Requires: <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
+ */
+class KQTTTorrent {
+  constructor(kqtt) {
+    this.kqtt = kqtt;
+    this.client = null;
+    this.torrent = null;
+    this.wires = new Map();  // peerId -> wire
+    this.roomCode = null;
+    this.ready = false;
+  }
+
+  /**
+   * Check if WebTorrent is available
+   */
+  static isAvailable() {
+    return typeof WebTorrent !== 'undefined';
+  }
+
+  /**
+   * Join a room via WebTorrent (open P2P)
+   * roomCode is converted to a torrent info hash
+   */
+  async join(roomCode) {
+    if (!KQTTTorrent.isAvailable()) {
+      throw new Error('WebTorrent not loaded. Add: <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>');
+    }
+
+    this.roomCode = roomCode;
+    this.client = new WebTorrent();
+
+    // Create a deterministic info hash from room code
+    // We use a fake torrent with the room code as the "file"
+    const encoder = new TextEncoder();
+    const data = encoder.encode(`KQTT-ROOM:${roomCode}:${Date.now().toString(36)}`);
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+
+    return new Promise((resolve, reject) => {
+      // Seed the "room" torrent
+      this.client.seed(blob, {
+        name: `kqtt-${roomCode}`,
+        announce: [
+          'wss://tracker.openwebtorrent.com',
+          'wss://tracker.btorrent.xyz',
+          'wss://tracker.fastcast.nz'
+        ]
+      }, (torrent) => {
+        this.torrent = torrent;
+        this.ready = true;
+        console.log(`[KQTT-Torrent] Room created: ${roomCode}`);
+        console.log(`[KQTT-Torrent] Magnet: ${torrent.magnetURI}`);
+
+        // Handle incoming peers
+        torrent.on('wire', (wire) => this._handleWire(wire));
+
+        resolve({
+          roomCode,
+          magnetURI: torrent.magnetURI,
+          infoHash: torrent.infoHash
+        });
+      });
+
+      this.client.on('error', reject);
+    });
+  }
+
+  /**
+   * Connect to an existing room by magnet URI or room code
+   */
+  async connect(magnetOrCode) {
+    if (!KQTTTorrent.isAvailable()) {
+      throw new Error('WebTorrent not loaded');
+    }
+
+    this.client = new WebTorrent();
+
+    return new Promise((resolve, reject) => {
+      // Add the torrent (will connect to seeders)
+      this.client.add(magnetOrCode, {
+        announce: [
+          'wss://tracker.openwebtorrent.com',
+          'wss://tracker.btorrent.xyz',
+          'wss://tracker.fastcast.nz'
+        ]
+      }, (torrent) => {
+        this.torrent = torrent;
+        this.ready = true;
+        this.roomCode = torrent.name.replace('kqtt-', '');
+
+        console.log(`[KQTT-Torrent] Connected to room: ${this.roomCode}`);
+
+        // Handle existing and new peers
+        torrent.on('wire', (wire) => this._handleWire(wire));
+
+        // Process existing wires
+        torrent.wires.forEach(wire => this._handleWire(wire));
+
+        resolve({
+          roomCode: this.roomCode,
+          peers: torrent.numPeers
+        });
+      });
+
+      this.client.on('error', reject);
+    });
+  }
+
+  /**
+   * Handle a new wire (peer connection)
+   */
+  _handleWire(wire) {
+    const peerId = wire.peerId?.toString('hex')?.substr(0, 8) || this.kqtt._genId();
+
+    // Set up KQTT extension protocol
+    wire.use(this._createExtension(peerId));
+
+    wire.on('close', () => {
+      this.wires.delete(peerId);
+      this.kqtt.emit('peer-leave', { peerId, transport: 'torrent' });
+    });
+
+    this.wires.set(peerId, wire);
+    this.kqtt.emit('peer-join', { peerId, transport: 'torrent' });
+
+    console.log(`[KQTT-Torrent] Peer connected: ${peerId}`);
+  }
+
+  /**
+   * Create BitTorrent extension for KQTT messages
+   */
+  _createExtension(peerId) {
+    const self = this;
+
+    return function KQTTExtension(wire) {
+      wire.extendedHandshake.kqtt = { version: 1, peerId: self.kqtt.peerId };
+    };
+  }
+
+  /**
+   * Send message to all torrent peers
+   */
+  broadcast(msg) {
+    if (!this.ready) return 0;
+
+    const data = JSON.stringify(msg);
+    let sent = 0;
+
+    for (const [peerId, wire] of this.wires) {
+      try {
+        // Use extended message for KQTT data
+        if (wire.extended) {
+          wire.extended('kqtt', Buffer.from(data));
+          sent++;
+        }
+      } catch (e) {
+        console.warn(`[KQTT-Torrent] Send error to ${peerId}:`, e);
+      }
+    }
+
+    return sent;
+  }
+
+  /**
+   * Get torrent stats
+   */
+  getStats() {
+    if (!this.torrent) return null;
+    return {
+      roomCode: this.roomCode,
+      peers: this.torrent.numPeers,
+      downloaded: this.torrent.downloaded,
+      uploaded: this.torrent.uploaded,
+      ratio: this.torrent.ratio,
+      progress: this.torrent.progress
+    };
+  }
+
+  /**
+   * Leave the room
+   */
+  close() {
+    if (this.torrent) {
+      this.torrent.destroy();
+      this.torrent = null;
+    }
+    if (this.client) {
+      this.client.destroy();
+      this.client = null;
+    }
+    this.wires.clear();
+    this.ready = false;
+  }
+}
+
+GS.KQTTTorrent = KQTTTorrent;
+```
+
+## Unified Transport Manager
+
+Manages multiple transports (WebRTC, WebTorrent, BroadcastChannel) with fallback.
+
+```javascript
+/**
+ * KQTT Transport Manager
+ * Unified interface for multiple P2P transports
+ */
+class KQTTTransport {
+  constructor(kqtt) {
+    this.kqtt = kqtt;
+    this.transports = {
+      local: null,    // BroadcastChannel (same-origin)
+      webrtc: null,   // WebRTC (private, manual signaling)
+      torrent: null   // WebTorrent (open, DHT discovery)
+    };
+    this.activeTransport = null;
+  }
+
+  /**
+   * Initialize local transport (always available)
+   */
+  initLocal(channelName) {
+    this.transports.local = new GS.KQTTLocalBridge(this.kqtt, channelName);
+    console.log('[KQTT Transport] Local bridge initialized');
+  }
+
+  /**
+   * Initialize WebRTC transport (private rooms)
+   */
+  initWebRTC() {
+    this.transports.webrtc = new GS.KQTTSignaling(this.kqtt);
+    console.log('[KQTT Transport] WebRTC signaling initialized');
+    return this.transports.webrtc;
+  }
+
+  /**
+   * Initialize WebTorrent transport (open rooms)
+   */
+  async initTorrent(roomCode, isHost = false) {
+    if (!GS.KQTTTorrent.isAvailable()) {
+      console.warn('[KQTT Transport] WebTorrent not available');
+      return null;
+    }
+
+    this.transports.torrent = new GS.KQTTTorrent(this.kqtt);
+
+    if (isHost) {
+      const result = await this.transports.torrent.join(roomCode);
+      this.activeTransport = 'torrent';
+      console.log('[KQTT Transport] Torrent room created:', result.magnetURI);
+      return result;
+    } else {
+      const result = await this.transports.torrent.connect(roomCode);
+      this.activeTransport = 'torrent';
+      console.log('[KQTT Transport] Torrent room joined');
+      return result;
+    }
+  }
+
+  /**
+   * Publish to all active transports
+   */
+  publish(topic, payload, options = {}) {
+    // Publish to KQTT (WebRTC peers)
+    this.kqtt.publish(topic, payload, options);
+
+    // Also publish to local bridge
+    if (this.transports.local) {
+      this.transports.local.publish(topic, payload, options);
+    }
+
+    // Also publish to torrent peers
+    if (this.transports.torrent?.ready) {
+      this.transports.torrent.broadcast({
+        type: 'PUBLISH',
+        topic,
+        payload,
+        from: this.kqtt.peerId,
+        ts: Date.now()
+      });
+    }
+  }
+
+  /**
+   * Get combined stats from all transports
+   */
+  getStats() {
+    return {
+      kqtt: this.kqtt.getStats(),
+      local: this.transports.local ? { peers: this.transports.local.localPeers.size } : null,
+      torrent: this.transports.torrent?.getStats() || null,
+      activeTransport: this.activeTransport
+    };
+  }
+
+  /**
+   * Close all transports
+   */
+  close() {
+    if (this.transports.local) {
+      this.transports.local.close();
+      this.transports.local = null;
+    }
+    if (this.transports.torrent) {
+      this.transports.torrent.close();
+      this.transports.torrent = null;
+    }
+    this.kqtt.close();
+  }
+}
+
+GS.KQTTTransport = KQTTTransport;
+```

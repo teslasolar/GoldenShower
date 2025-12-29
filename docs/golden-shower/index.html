@@ -104,6 +104,7 @@
     window.GS = {};
 
     // Module manifest - order matters for dependencies
+    // UDT-based modular structure (250 token max per module)
     const MODULES = [
       // Engine core
       ['vec3', 'engine/vec3.md'],
@@ -117,8 +118,18 @@
       ['characters', 'characters/_index.md'],
       ['weapons', 'weapons/_index.md'],
       ['maps', 'maps/_index.md'],
-      // P2P Networking (KQTT - must load before network)
-      ['kqtt', 'multiplayer/kqtt.md'],
+      // KQTT P2P (modular UDTs)
+      ['kqtt-core', 'multiplayer/kqtt/core.md'],
+      ['kqtt-connect', 'multiplayer/kqtt/connect.md'],
+      ['kqtt-answer', 'multiplayer/kqtt/answer.md'],
+      ['kqtt-peer', 'multiplayer/kqtt/peer.md'],
+      ['kqtt-message', 'multiplayer/kqtt/message.md'],
+      ['kqtt-pubsub', 'multiplayer/kqtt/pubsub.md'],
+      ['kqtt-publish', 'multiplayer/kqtt/publish.md'],
+      ['kqtt-signaling', 'multiplayer/kqtt/signaling.md'],
+      ['kqtt-local', 'multiplayer/kqtt/local.md'],
+      ['kqtt-torrent', 'multiplayer/kqtt/torrent.md'],
+      ['kqtt-transport', 'multiplayer/kqtt/transport.md'],
       // Multiplayer
       ['player', 'multiplayer/player.md'],
       ['network', 'multiplayer/network.md'],
@@ -126,8 +137,15 @@
       ['discovery', 'multiplayer/discovery.md'],
       ['lobby', 'multiplayer/lobby.md'],
       ['lobbyui', 'multiplayer/lobby-ui.md'],
-      // Game
-      ['game', 'engine/game.md']
+      // Game (modular UDTs)
+      ['game-core', 'engine/game/core.md'],
+      ['game-arena', 'engine/game/arena.md'],
+      ['game-player', 'engine/game/player.md'],
+      ['game-update', 'engine/game/update.md'],
+      ['game-combat', 'engine/game/combat.md'],
+      ['game-chat', 'engine/game/chat.md'],
+      ['game-render', 'engine/game/render.md'],
+      ['game-weapons', 'engine/game/weapons.md']
     ];
 
     let lobby = null;
