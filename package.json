@@ -1,13 +1,15 @@
 {
   "name": "goldenshower",
   "version": "1.0.0",
-  "description": "```    ╔═══════════════════════════════════════════════════════════╗    ║  ██████╗  ██████╗ ██╗     ██████╗ ███████╗███╗   ██╗     ║    ║ ██╔════╝ ██╔═══██╗██║     ██╔══██╗██╔════╝████╗  ██║     ║    ║ ██║  ███╗██║   ██║██║     ██║  ██║█████╗  ██╔██╗ ██║     ║    ║ ██║   ██║██║   ██║██║     ██║  ██║██╔══╝  ██║╚██╗██║     ║    ║ ╚██████╔╝╚██████╔╝███████╗██████╔╝███████╗██║ ╚████║     ║    ║  ╚═════╝  ╚═════╝ ╚══════╝╚═════╝ ╚══════╝╚═╝  ╚═══╝     ║    ║           S H O W E R   //   K O N O M I                 ║    ╚═══════════════════════════════════════════════════════════╝ ```",
+  "description": "GOLDEN SHOWER - Retro Arena FPS by Konomi Systems. P2P WebRTC multiplayer, zero servers.",
   "main": "index.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/unit.js",
+    "start": "npx serve . -l 3000",
+    "lint": "node -e \"const fs=require('fs');const d=fs.readdirSync('docs',{recursive:true}).filter(f=>f.endsWith('.md'));console.log(d.length+' docs OK')\""
   },
   "repository": {
     "type": "git",

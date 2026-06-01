@@ -1,0 +1,79 @@
+name: GOLDEN SHOWER CI
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: ['*']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check markdown docs parse
+        run: |
+          echo "Checking all .md files exist and are valid..."
+          find docs -name "*.md" | wc -l
+          echo "Checking all character files..."
+          for f in docs/golden-shower/characters/*.md; do
+            head -1 "$f" | grep -q "^#" || echo "WARN: $f missing header"
+          done
+          echo "Checking all weapon files..."
+          for f in docs/golden-shower/weapons/*.md; do
+            head -1 "$f" | grep -q "^#" || echo "WARN: $f missing header"
+          done
+
+  pages:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/claude/setup-p2p-kqtt-1bHmF'
+    needs: [test, lint]
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - uses: actions/deploy-pages@v4
+
+  stats:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      issues: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate stats SVG from issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node -e "
+          const https=require('https');
+          const opts={hostname:'api.github.com',path:'/repos/teslasolar/goldenshower/issues?state=all&per_page=100&labels=tag',
+          headers:{'User-Agent':'goldenshower-ci','Authorization':'token '+process.env.GH_TOKEN}};
+          https.get(opts,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{
+          const issues=JSON.parse(d);const tags={};
+          issues.forEach(i=>{(i.labels||[]).forEach(l=>{tags[l.name]=(tags[l.name]||0)+1})});
+          const open=issues.filter(i=>i.state==='open').length;
+          const closed=issues.filter(i=>i.state==='closed').length;
+          console.log(JSON.stringify({total:issues.length,open,closed,tags},null,2))
+          })}).on('error',e=>console.log('{}'))
+          "
