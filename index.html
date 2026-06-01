@@ -37,8 +37,8 @@ canvas{display:block;width:100vw;height:100vh}
   <p class="co">by Konomi Systems</p>
   <p class="hint">CLICK TO ENTER</p>
   <div class="keys">
-    <kbd>W A S D</kbd> move · <kbd>Mouse</kbd> look · <kbd>Left Click</kbd> shoot (0 dmg test)<br>
-    <kbd>Space</kbd> jump · <kbd>Enter</kbd> chat · <kbd>Tab</kbd> players
+    <kbd>W A S D</kbd> move · <kbd>Mouse</kbd> look · <kbd>Left Click</kbd> shoot · <kbd>I</kbd> invert Y<br>
+    <kbd>Space</kbd> jump · <kbd>Enter</kbd> chat · <kbd>🎮 Xbox</kbd> Left stick + Right stick + RT
   </div>
 </div>
 <script>
@@ -131,14 +131,51 @@ mqtt.onclose=()=>{mqtt=null;addChat('','P2P disconnected — local mode',true)}
 mqtt.onerror=()=>{mqtt=null}}catch(e){}}
 
 // ═══ INPUT ═══
-document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Enter'&&document.activeElement!==$('chat-input')){$('chat-input').focus();e.preventDefault()}})
+document.addEventListener('keydown',e=>{keys[e.code]=true
+if(e.code==='Enter'&&document.activeElement!==$('chat-input')){$('chat-input').focus();e.preventDefault()}
+if(e.code==='KeyI'){invertY=!invertY;addChat('','Mouse Y: '+(invertY?'inverted':'normal'),true)}})
 document.addEventListener('keyup',e=>keys[e.code]=false)
 document.addEventListener('mousemove',e=>{if(locked){mouse.dx+=e.movementX;mouse.dy+=e.movementY}})
 document.addEventListener('mousedown',e=>{if(locked&&e.button===0)fireBlast()})
 document.addEventListener('pointerlockchange',()=>locked=!!document.pointerLockElement)
+let invertY=false
+
+// ═══ GAMEPAD (Xbox/PS/generic) ═══
+let gamepadIdx=null
+window.addEventListener('gamepadconnected',e=>{gamepadIdx=e.gamepad.index
+addChat('','🎮 Gamepad connected: '+e.gamepad.id.substring(0,30),true)})
+window.addEventListener('gamepaddisconnected',e=>{gamepadIdx=null;addChat('','🎮 Gamepad disconnected',true)})
+
+function pollGamepad(){
+if(gamepadIdx===null)return
+const gp=navigator.getGamepads()[gamepadIdx]
+if(!gp)return
+const deadzone=.15
+// Left stick — move
+const lx=Math.abs(gp.axes[0])>deadzone?gp.axes[0]:0
+const ly=Math.abs(gp.axes[1])>deadzone?gp.axes[1]:0
+// Right stick — look
+const rx=Math.abs(gp.axes[2])>deadzone?gp.axes[2]:0
+const ry=Math.abs(gp.axes[3])>deadzone?gp.axes[3]:0
+const moveSpd=.15,lookSpd=.04
+if(ly<0){ME.x+=Math.sin(ME.yaw)*ly*moveSpd;ME.z+=Math.cos(ME.yaw)*ly*moveSpd}
+if(ly>0){ME.x+=Math.sin(ME.yaw)*ly*moveSpd;ME.z+=Math.cos(ME.yaw)*ly*moveSpd}
+if(lx){ME.x+=Math.cos(ME.yaw)*lx*moveSpd;ME.z-=Math.sin(ME.yaw)*lx*moveSpd}
+ME.yaw+=rx*lookSpd
+ME.pitch=MX(-.8,MN(.8,ME.pitch-ry*lookSpd))
+// A = jump, RT = shoot, B = chat
+if(gp.buttons[0]?.pressed&&ME.y<=1.6)ME.vy=.15
+if(gp.buttons[7]?.pressed||gp.buttons[5]?.pressed){if(!gp._fireCd){fireBlast();gp._fireCd=8}else gp._fireCd--}
+else gp._fireCd=0}
+
+// ═══ WEBGPU CHECK ═══
+let hasWebGPU=false
+if(navigator.gpu){navigator.gpu.requestAdapter().then(a=>{if(a){hasWebGPU=true;addChat('','⚡ WebGPU available',true)}}).catch(()=>{})}
 
 function enterLobby(){$('intro').style.display='none';cv.requestPointerLock();running=true
-broadcast({type:'join',name:ME.name});addChat('','Welcome '+ME.name,true);tryMQTT()}
+broadcast({type:'join',name:ME.name});addChat('','Welcome '+ME.name,true)
+addChat('','Controls: WASD/🎮 move · Mouse/Right stick look · Click/RT shoot · I=invert Y',true)
+tryMQTT()}
 cv.addEventListener('click',()=>{if(running&&!locked)cv.requestPointerLock()})
 
 // ═══ SIMPLE SOFTWARE 3D RENDERER ═══
@@ -217,16 +254,21 @@ if(b.life<=0)blasts.splice(i,1)}}
 // ═══ PHYSICS ═══
 function update(){if(!running)return
 const spd=.12,sens=.003
-ME.yaw+=mouse.dx*sens;ME.pitch=MX(-.8,MN(.8,ME.pitch-mouse.dy*sens))
+ME.yaw+=mouse.dx*sens
+ME.pitch=MX(-.8,MN(.8,ME.pitch+(invertY?1:-1)*mouse.dy*sens))
 mouse.dx=0;mouse.dy=0
-const dx=Math.sin(ME.yaw),dz=Math.cos(ME.yaw)
-if(keys.KeyW){ME.x-=dx*spd;ME.z-=dz*spd}
-if(keys.KeyS){ME.x+=dx*spd;ME.z+=dz*spd}
-if(keys.KeyA){ME.x-=dz*spd;ME.z+=dx*spd}
-if(keys.KeyD){ME.x+=dz*spd;ME.z-=dx*spd}
+// forward = into the screen along yaw direction
+const fwdX=Math.sin(ME.yaw),fwdZ=Math.cos(ME.yaw)
+const rightX=Math.cos(ME.yaw),rightZ=-Math.sin(ME.yaw)
+if(keys.KeyW){ME.x+=fwdX*spd;ME.z+=fwdZ*spd}
+if(keys.KeyS){ME.x-=fwdX*spd;ME.z-=fwdZ*spd}
+if(keys.KeyA){ME.x-=rightX*spd;ME.z-=rightZ*spd}
+if(keys.KeyD){ME.x+=rightX*spd;ME.z+=rightZ*spd}
 if(keys.Space&&ME.y<=1.6){ME.vy=.15}
 ME.vy-=.008;ME.y+=ME.vy;if(ME.y<1.6){ME.y=1.6;ME.vy=0}
 ME.x=MX(-19,MN(19,ME.x));ME.z=MX(-19,MN(19,ME.z))
+// gamepad
+pollGamepad()
 // FEMTO AI update
 BOTS.forEach(bot=>femtoDecide(bot,.016))
 // cull stale peers
@@ -241,7 +283,8 @@ $('hud').textContent=`GOLDEN SHOWER · GLOBAL LOBBY\n`+
 `${ME.name} · pos(${ME.x.toFixed(1)},${ME.z.toFixed(1)})\n`+
 `shots: ${ME.shots} · peers: ${PEERS.size}\n`+
 `blasts: ${blasts.length} · bots: ${BOTS.length} · dmg: 0 (test)\n`+
-`${BOTS.map(b=>b.name.substring(0,8)+':'+b.state).join(' ')}`
+`🎮:${gamepadIdx!==null?'connected':'none'} gpu:${hasWebGPU?'webgpu':'canvas2d'} Y:${invertY?'inv':'norm'}\n`+
+`${BOTS.map(b=>b.name.substring(0,6)+':'+b.state[0]).join(' ')}`
 let pList='PLAYERS\n'+ME.name+' (you)\n';PEERS.forEach((p,n)=>pList+=n+'\n')
 $('players').textContent=pList}
 frame()
