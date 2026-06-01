@@ -4,8 +4,9 @@ const blasts=[]
 const T=Math.PI*2,Rn=Math.random,FL=Math.floor,MN=Math.min,MX=Math.max
 
 function fireBlast(){
-const dx=-Math.sin(ME.yaw)*Math.cos(ME.pitch),dy=Math.sin(ME.pitch),dz=-Math.cos(ME.yaw)*Math.cos(ME.pitch)
-blasts.push({x:ME.x,y:ME.y,z:ME.z,dx:dx*.5,dy:dy*.5,dz:dz*.5,life:1,hue:Rn(),owner:ME.name})
+const dx=Math.sin(ME.yaw)*Math.cos(ME.pitch),dy=-Math.sin(ME.pitch),dz=Math.cos(ME.yaw)*Math.cos(ME.pitch)
+const spd=.15
+blasts.push({x:ME.x+dx*2,y:ME.y+dy*2,z:ME.z+dz*2,dx:dx*spd,dy:dy*spd,dz:dz*spd,life:1.5,hue:Rn(),owner:ME.name})
 ME.shots++;broadcastBlast(dx,dy,dz)}
 
 const BOTS=[
@@ -27,7 +28,8 @@ if(huntW>.5&&dist<18){bot.state='hunt'
   bot.x-=Math.sin(bot.yaw)*(.06+bot.aggro*.04);bot.z-=Math.cos(bot.yaw)*(.06+bot.aggro*.04)
   bot.fireCd-=dt
   if(dist<15&&bot.fireCd<=0){bot.fireCd=.8+Rn()*(1-bot.aggro)
-    blasts.push({x:bot.x,y:bot.y,z:bot.z,dx:-Math.sin(bot.yaw)*.5,dy:(Rn()-.5)*.05,dz:-Math.cos(bot.yaw)*.5,life:1,hue:Rn(),owner:bot.name})}}
+    const bsx=Math.sin(bot.yaw),bsz=Math.cos(bot.yaw)
+    blasts.push({x:bot.x+bsx*2,y:bot.y,z:bot.z+bsz*2,dx:bsx*.15,dy:(Rn()-.5)*.02,dz:bsz*.15,life:1.5,hue:Rn(),owner:bot.name})}}
 else{bot.state='patrol'
   const wp=bot.waypoints[bot.wpIdx],wx=wp[0]-bot.x,wz=wp[1]-bot.z
   if(Math.sqrt(wx*wx+wz*wz)<1.5)bot.wpIdx=(bot.wpIdx+1)%bot.waypoints.length
