@@ -1,108 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Golden Shower - GoldenEye Multiplayer by Konomi Systems</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:linear-gradient(135deg,#0a0a0f 0%,#1a1a2f 100%);color:#e0e0e0;font-family:'Courier New',monospace;min-height:100vh;display:flex;flex-direction:column}
-    .header{text-align:center;padding:60px 20px 40px}
-    .header h1{font-size:64px;color:#d4af37;text-shadow:0 0 30px rgba(212,175,55,0.5);letter-spacing:12px;margin-bottom:15px}
-    .header .subtitle{color:#888;font-size:16px;margin-bottom:10px}
-    .header .company{color:#666;font-size:12px}
-    .main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:40px;padding:20px;flex-wrap:wrap}
-    .card{background:rgba(20,20,30,0.9);border:2px solid #d4af37;padding:30px;max-width:400px;width:100%}
-    .card h2{color:#d4af37;margin-bottom:20px;letter-spacing:3px;font-size:18px;border-bottom:1px solid #333;padding-bottom:10px}
-    .card p{color:#aaa;line-height:1.6;margin-bottom:15px;font-size:13px}
-    .card ul{color:#888;margin-left:20px;font-size:12px}
-    .card li{margin:8px 0}
-    .play-btn{display:block;background:linear-gradient(180deg,#d4af37 0%,#a08020 100%);color:#000;text-decoration:none;padding:20px 40px;font-size:20px;font-weight:bold;text-align:center;letter-spacing:4px;margin-top:20px;transition:all 0.2s}
-    .play-btn:hover{background:linear-gradient(180deg,#e4bf47 0%,#b09030 100%);transform:scale(1.02)}
-    .features{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:20px}
-    .feature{background:#14141f;padding:15px;border-left:3px solid #d4af37}
-    .feature h3{color:#d4af37;font-size:12px;margin-bottom:5px}
-    .feature p{color:#777;font-size:11px;margin:0}
-    .tech{margin-top:20px;padding-top:20px;border-top:1px solid #333}
-    .tech-tag{display:inline-block;background:#1a1a2a;color:#888;padding:5px 10px;margin:3px;font-size:10px;border:1px solid #333}
-    .footer{text-align:center;padding:30px;color:#444;font-size:11px;border-top:1px solid #222}
-    .footer a{color:#d4af37}
-    .stats{display:flex;justify-content:center;gap:30px;margin-top:20px}
-    .stat{text-align:center}
-    .stat .num{font-size:24px;color:#d4af37}
-    .stat .label{font-size:10px;color:#666;margin-top:5px}
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>GOLDEN SHOWER</h1>
-    <p class="subtitle">GoldenEye 007 Multiplayer Reconstruction</p>
-    <p class="company">by Konomi Systems</p>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GOLDEN SHOWER · Global Lobby</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'Courier New',monospace;overflow:hidden}
+canvas{display:block;width:100vw;height:100vh}
+#hud{position:fixed;top:12px;left:14px;font:10px/1.3 'Courier New',monospace;color:#d4af37;z-index:9;pointer-events:none;text-shadow:0 0 6px #d4af3744;white-space:pre}
+#chat{position:fixed;bottom:12px;left:12px;width:320px;z-index:10}
+#chat-log{max-height:180px;overflow-y:auto;font-size:11px;color:#aaa;line-height:1.5;margin-bottom:4px;padding:8px;background:rgba(10,10,20,.7);border:1px solid #333;border-radius:4px}
+#chat-log .sys{color:#d4af37;font-style:italic}
+#chat-log .name{color:#d4af37;font-weight:bold}
+#chat-input{width:100%;background:#14141f;border:1px solid #444;color:#fff;padding:8px 12px;font:12px 'Courier New',monospace;border-radius:4px;outline:none}
+#chat-input:focus{border-color:#d4af37}
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(212,175,55,.6);font:28px monospace;pointer-events:none;z-index:9}
+#players{position:fixed;top:12px;right:14px;font:10px/1.4 'Courier New';color:#888;z-index:9;pointer-events:none;text-align:right}
+#intro{position:fixed;inset:0;z-index:20;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+#intro h1{font-size:48px;color:#d4af37;text-shadow:0 0 30px rgba(212,175,55,.5);letter-spacing:10px;margin-bottom:12px}
+#intro .sub{color:#888;font-size:14px;margin-bottom:6px}
+#intro .co{color:#555;font-size:11px;margin-bottom:30px}
+#intro .hint{color:#d4af37;font-size:16px;animation:pulse 1.5s infinite}
+#intro .keys{color:#666;font-size:11px;margin-top:20px;line-height:2}
+#intro .keys kbd{background:#222;padding:3px 8px;border-radius:3px;color:#ccc}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head><body>
+<canvas id="cv"></canvas>
+<div id="crosshair">+</div>
+<div id="hud"></div>
+<div id="players"></div>
+<div id="chat"><div id="chat-log"></div><input id="chat-input" placeholder="press Enter to chat..." maxlength="200"></div>
+<div id="intro" onclick="enterLobby()">
+  <h1>GOLDEN SHOWER</h1>
+  <p class="sub">Retro Arena FPS · Global Lobby</p>
+  <p class="co">by Konomi Systems</p>
+  <p class="hint">CLICK TO ENTER</p>
+  <div class="keys">
+    <kbd>W A S D</kbd> move · <kbd>Mouse</kbd> look · <kbd>Left Click</kbd> shoot (0 dmg test)<br>
+    <kbd>Space</kbd> jump · <kbd>Enter</kbd> chat · <kbd>Tab</kbd> players
   </div>
+</div>
+<script>
+const cv=document.getElementById('cv'),gl=cv.getContext('webgl2')||cv.getContext('webgl')
+const $=id=>document.getElementById(id),Rn=Math.random,T=Math.PI*2,FL=Math.floor,MN=Math.min,MX=Math.max
 
-  <div class="main">
-    <div class="card">
-      <h2>ABOUT</h2>
-      <p>A faithful browser-based reconstruction of the legendary GoldenEye 007 multiplayer experience. Built entirely with vanilla JavaScript, WebGL, and P2P networking.</p>
-      <p>No servers required - connect directly with friends using WebRTC or discover open games via WebTorrent.</p>
+// ═══ PLAYER STATE ═══
+const ME={name:'Agent_'+Rn().toString(36).substr(2,4).toUpperCase(),
+x:0,y:1.6,z:0,yaw:0,pitch:0,vx:0,vy:0,vz:0,
+shots:0,color:'#d4af37'}
+const PEERS=new Map()
+const keys={},mouse={dx:0,dy:0}
+let locked=false,running=false
 
-      <div class="features">
-        <div class="feature">
-          <h3>P2P MULTIPLAYER</h3>
-          <p>Direct peer-to-peer connections via KQTT protocol</p>
-        </div>
-        <div class="feature">
-          <h3>CLASSIC WEAPONS</h3>
-          <p>PP7, KF7 Soviet, Golden Gun & more</p>
-        </div>
-        <div class="feature">
-          <h3>ARENA COMBAT</h3>
-          <p>North, East, South, West dock areas</p>
-        </div>
-        <div class="feature">
-          <h3>GLOBAL CHAT</h3>
-          <p>Connect with players worldwide</p>
-        </div>
-      </div>
+// ═══ BLASTS ═══
+const blasts=[]
+function fireBlast(){
+const dx=-Math.sin(ME.yaw)*Math.cos(ME.pitch),dy=Math.sin(ME.pitch),dz=-Math.cos(ME.yaw)*Math.cos(ME.pitch)
+blasts.push({x:ME.x,y:ME.y,z:ME.z,dx:dx*.5,dy:dy*.5,dz:dz*.5,life:1,
+hue:Rn(),owner:ME.name})
+ME.shots++
+broadcastBlast(dx,dy,dz)}
 
-      <a href="docs/golden-shower/index.html" class="play-btn">PLAY NOW</a>
-    </div>
+// ═══ CHAT ═══
+function addChat(name,text,sys){const log=$('chat-log')
+const d=document.createElement('div')
+d.innerHTML=sys?`<span class="sys">${text}</span>`:`<span class="name">${name}:</span> ${text}`
+log.appendChild(d);log.scrollTop=log.scrollHeight}
+$('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('chat-input').value.trim()){
+const msg=$('chat-input').value.trim();addChat(ME.name,msg);broadcastChat(msg);$('chat-input').value='';$('chat-input').blur();e.preventDefault()}
+if(e.key==='Escape')$('chat-input').blur()})
 
-    <div class="card">
-      <h2>CONTROLS</h2>
-      <ul>
-        <li><strong>W A S D</strong> - Movement</li>
-        <li><strong>Mouse</strong> - Look around</li>
-        <li><strong>Left Click</strong> - Shoot</li>
-        <li><strong>Space</strong> - Jump</li>
-        <li><strong>1-7</strong> - Switch weapons</li>
-        <li><strong>Enter</strong> - Open chat</li>
-        <li><strong>Tab</strong> - Scoreboard</li>
-        <li><strong>Q</strong> - Quick play (solo)</li>
-      </ul>
+// ═══ P2P via BroadcastChannel (same-origin tabs) + optional MQTT ═══
+const bc=new BroadcastChannel('golden-shower-lobby')
+let mqtt=null
+bc.onmessage=e=>{const d=e.data
+if(d.type==='pos')PEERS.set(d.name,{x:d.x,y:d.y,z:d.z,yaw:d.yaw,color:d.color,t:Date.now()})
+if(d.type==='chat')addChat(d.name,d.text)
+if(d.type==='blast')blasts.push({x:d.x,y:d.y,z:d.z,dx:d.dx,dy:d.dy,dz:d.dz,life:1,hue:d.hue,owner:d.name})
+if(d.type==='join')addChat('',d.name+' joined the lobby',true)
+if(d.type==='leave')PEERS.delete(d.name)}
+function broadcast(msg){bc.postMessage(msg);if(mqtt)try{mqtt.send(JSON.stringify(msg))}catch(e){}}
+function broadcastPos(){broadcast({type:'pos',name:ME.name,x:ME.x,y:ME.y,z:ME.z,yaw:ME.yaw,color:ME.color})}
+function broadcastChat(text){broadcast({type:'chat',name:ME.name,text})}
+function broadcastBlast(dx,dy,dz){broadcast({type:'blast',name:ME.name,x:ME.x,y:ME.y,z:ME.z,dx:dx*.5,dy:dy*.5,dz:dz*.5,hue:Rn()})}
 
-      <h2 style="margin-top:30px">TECHNOLOGY</h2>
-      <div class="tech">
-        <span class="tech-tag">WebGL</span>
-        <span class="tech-tag">WebRTC</span>
-        <span class="tech-tag">WebTorrent</span>
-        <span class="tech-tag">KQTT P2P</span>
-        <span class="tech-tag">Markdown Docs</span>
-        <span class="tech-tag">UDT Modules</span>
-        <span class="tech-tag">GitHub Pages</span>
-      </div>
+// ═══ TRY MQTT FOR CROSS-ORIGIN ═══
+function tryMQTT(){
+const brokers=['wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt']
+const broker=brokers[FL(Rn()*brokers.length)]
+try{mqtt=new WebSocket(broker);mqtt.binaryType='arraybuffer'
+mqtt.onopen=()=>{addChat('','Connected to global P2P',true)}
+mqtt.onclose=()=>{mqtt=null;addChat('','P2P disconnected — local mode',true)}
+mqtt.onerror=()=>{mqtt=null}}catch(e){}}
 
-      <h2 style="margin-top:30px">HOW TO CONNECT</h2>
-      <p style="font-size:11px;color:#777">
-        <strong>Option 1:</strong> Create a lobby and share the 6-character code with friends<br><br>
-        <strong>Option 2:</strong> Use P2P connection panel to exchange WebRTC offers manually<br><br>
-        <strong>Option 3:</strong> Enable WebTorrent for open P2P discovery via DHT
-      </p>
-    </div>
-  </div>
+// ═══ INPUT ═══
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Enter'&&document.activeElement!==$('chat-input')){$('chat-input').focus();e.preventDefault()}})
+document.addEventListener('keyup',e=>keys[e.code]=false)
+document.addEventListener('mousemove',e=>{if(locked){mouse.dx+=e.movementX;mouse.dy+=e.movementY}})
+document.addEventListener('mousedown',e=>{if(locked&&e.button===0)fireBlast()})
+document.addEventListener('pointerlockchange',()=>locked=!!document.pointerLockElement)
 
-  <div class="footer">
-    <p>GOLDEN SHOWER &copy; 2024 Konomi Systems | <a href="https://github.com/teslasolar/GoldenShower">GitHub</a></p>
-  </div>
-</body>
-</html>
+function enterLobby(){$('intro').style.display='none';cv.requestPointerLock();running=true
+broadcast({type:'join',name:ME.name});addChat('','Welcome '+ME.name,true);tryMQTT()}
+cv.addEventListener('click',()=>{if(running&&!locked)cv.requestPointerLock()})
+
+// ═══ SIMPLE SOFTWARE 3D RENDERER ═══
+cv.width=innerWidth;cv.height=innerHeight
+const W=cv.width,H=cv.height,ctx=cv.getContext('2d')
+window.addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight})
+
+function proj(x,y,z){
+const dx=x-ME.x,dy=y-ME.y,dz=z-ME.z
+const cx=Math.cos(-ME.yaw),sx=Math.sin(-ME.yaw),cy=Math.cos(-ME.pitch),sy=Math.sin(-ME.pitch)
+const rx=dx*cx+dz*sx,rz=-dx*sx+dz*cx
+const ry2=dy*cy-rz*sy,rz2=dy*sy+rz*cy
+if(rz2<.1)return null
+const fov=cv.width*.8
+return{sx:cv.width/2+rx/rz2*fov,sy:cv.height/2-ry2/rz2*fov,d:rz2}}
+
+// ═══ ARENA GEOMETRY ═══
+const FLOOR_LINES=[],WALLS=[],PILLARS=[]
+for(let i=-20;i<=20;i++){FLOOR_LINES.push({x1:i,z1:-20,x2:i,z2:20});FLOOR_LINES.push({x1:-20,z1:i,x2:20,z2:i})}
+for(let i=0;i<4;i++){const a=i*T/4,r=20
+WALLS.push({x1:Math.cos(a)*r,z1:Math.sin(a)*r,x2:Math.cos(a+T/4)*r,z2:Math.sin(a+T/4)*r,h:4})}
+for(let i=0;i<8;i++){const a=i*T/8,r=12;PILLARS.push({x:Math.cos(a)*r,z:Math.sin(a)*r,r:.4,h:5})}
+
+function render(){
+const w=cv.width,h=cv.height
+ctx.fillStyle='#0a0a0f';ctx.fillRect(0,0,w,h)
+// sky gradient
+const skyG=ctx.createLinearGradient(0,0,0,h/2)
+skyG.addColorStop(0,'#0a0a1a');skyG.addColorStop(1,'#14142a');ctx.fillStyle=skyG;ctx.fillRect(0,0,w,h/2)
+// floor grid
+ctx.strokeStyle='rgba(212,175,55,.06)';ctx.lineWidth=1
+FLOOR_LINES.forEach(l=>{const a=proj(l.x1,0,l.z1),b=proj(l.x2,0,l.z2)
+if(a&&b&&a.d<40&&b.d<40){ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke()}})
+// walls
+ctx.strokeStyle='rgba(212,175,55,.15)';ctx.lineWidth=2
+WALLS.forEach(w2=>{const corners=[[w2.x1,0,w2.z1],[w2.x2,0,w2.z2],[w2.x2,w2.h,w2.z2],[w2.x1,w2.h,w2.z1]]
+const pp=corners.map(c=>proj(...c)).filter(Boolean)
+if(pp.length>=3){ctx.beginPath();pp.forEach((p,i)=>i?ctx.lineTo(p.sx,p.sy):ctx.moveTo(p.sx,p.sy));ctx.closePath();ctx.stroke()}})
+// pillars
+ctx.strokeStyle='rgba(212,175,55,.2)';PILLARS.forEach(p=>{
+const b=proj(p.x,0,p.z),t=proj(p.x,p.h,p.z)
+if(b&&t&&b.d<35){const sz=MX(2,20/b.d);ctx.beginPath();ctx.moveTo(b.sx,b.sy);ctx.lineTo(t.sx,t.sy);ctx.stroke()
+ctx.fillStyle='rgba(212,175,55,.1)';ctx.fillRect(t.sx-sz,t.sy,sz*2,b.sy-t.sy)}})
+// peers
+PEERS.forEach((p,name)=>{const pp=proj(p.x,p.y-.3,p.z)
+if(pp&&pp.d<40){const sz=MX(6,80/pp.d)
+ctx.fillStyle=p.color||'#888';ctx.fillRect(pp.sx-sz/2,pp.sy-sz*2,sz,sz*2)
+ctx.fillStyle='#fff';ctx.font=MX(8,12-pp.d*.2)+'px Courier New';ctx.textAlign='center'
+ctx.fillText(name,pp.sx,pp.sy-sz*2-4)}})
+// blasts
+for(let i=blasts.length-1;i>=0;i--){const b=blasts[i]
+b.x+=b.dx;b.y+=b.dy;b.z+=b.dz;b.life-=.015
+const bp=proj(b.x,b.y,b.z)
+if(bp&&bp.d<50){const sz=MX(2,30/bp.d)*b.life
+ctx.fillStyle=`hsla(${b.hue*360},80%,60%,${b.life*.6})`;ctx.beginPath();ctx.arc(bp.sx,bp.sy,sz,0,T);ctx.fill()
+ctx.strokeStyle=`hsla(${b.hue*360},80%,80%,${b.life*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(bp.sx,bp.sy,sz*1.5,0,T);ctx.stroke()}
+if(b.life<=0)blasts.splice(i,1)}}
+
+// ═══ PHYSICS ═══
+function update(){if(!running)return
+const spd=.12,sens=.003
+ME.yaw+=mouse.dx*sens;ME.pitch=MX(-.8,MN(.8,ME.pitch-mouse.dy*sens))
+mouse.dx=0;mouse.dy=0
+const dx=Math.sin(ME.yaw),dz=Math.cos(ME.yaw)
+if(keys.KeyW){ME.x-=dx*spd;ME.z-=dz*spd}
+if(keys.KeyS){ME.x+=dx*spd;ME.z+=dz*spd}
+if(keys.KeyA){ME.x-=dz*spd;ME.z+=dx*spd}
+if(keys.KeyD){ME.x+=dz*spd;ME.z-=dx*spd}
+if(keys.Space&&ME.y<=1.6){ME.vy=.15}
+ME.vy-=.008;ME.y+=ME.vy;if(ME.y<1.6){ME.y=1.6;ME.vy=0}
+ME.x=MX(-19,MN(19,ME.x));ME.z=MX(-19,MN(19,ME.z))
+// cull stale peers
+const now=Date.now();PEERS.forEach((p,k)=>{if(now-p.t>10000)PEERS.delete(k)})}
+
+// ═══ FRAME LOOP ═══
+let posTimer=0
+function frame(){requestAnimationFrame(frame)
+update();render()
+posTimer+=.016;if(posTimer>.1){posTimer=0;if(running)broadcastPos()}
+$('hud').textContent=`GOLDEN SHOWER · GLOBAL LOBBY\n`+
+`${ME.name} · pos(${ME.x.toFixed(1)},${ME.z.toFixed(1)})\n`+
+`shots: ${ME.shots} · peers: ${PEERS.size}\n`+
+`blasts: ${blasts.length} · dmg: 0 (test mode)`
+let pList='PLAYERS\n'+ME.name+' (you)\n';PEERS.forEach((p,n)=>pList+=n+'\n')
+$('players').textContent=pList}
+frame()
+</script>
+</body></html>
