@@ -7,9 +7,9 @@ let locked=false,running=false,invertY=false
 
 function updatePlayer(){
 if(!running)return
-const spd=.12,sens=.003
-ME.yaw+=mouse.dx*sens
-ME.pitch=Math.max(-.8,Math.min(.8,ME.pitch+(invertY?1:-1)*mouse.dy*sens))
+const spd=.12,sensX=.003,sensY=.0015
+ME.yaw+=mouse.dx*sensX
+ME.pitch=Math.max(-.6,Math.min(.6,ME.pitch+(invertY?1:-1)*mouse.dy*sensY))
 mouse.dx=0;mouse.dy=0
 const fwdX=Math.sin(ME.yaw),fwdZ=Math.cos(ME.yaw)
 const rightX=Math.cos(ME.yaw),rightZ=-Math.sin(ME.yaw)

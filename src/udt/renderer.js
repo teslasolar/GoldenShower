@@ -49,11 +49,11 @@ BOTS.forEach(b=>drawEntity(b.x,b.y,b.z,b.name,b.color,b.state))
 PEERS.forEach((p,n)=>drawEntity(p.x,p.y||1.6,p.z,n,p.color||'#888'))
 // blasts
 for(let i=blasts.length-1;i>=0;i--){const b=blasts[i]
+if(b.life<=0){blasts.splice(i,1);continue}
 b.x+=b.dx;b.y+=b.dy;b.z+=b.dz;b.life-=.015
 const bp=proj(b.x,b.y,b.z)
-if(bp&&bp.d<50){const sz=MX(2,30/bp.d)*b.life
+if(bp&&bp.d<50&&b.life>0){const sz=MX(1,MX(2,30/bp.d)*b.life)
 ctx.fillStyle=`hsla(${b.hue*360},80%,60%,${b.life*.6})`;ctx.beginPath();ctx.arc(bp.sx,bp.sy,sz,0,T2);ctx.fill()
-ctx.strokeStyle=`hsla(${b.hue*360},80%,80%,${b.life*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(bp.sx,bp.sy,sz*1.5,0,T2);ctx.stroke()}
-if(b.life<=0)blasts.splice(i,1)}}
+ctx.strokeStyle=`hsla(${b.hue*360},80%,80%,${b.life*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(bp.sx,bp.sy,MX(1,sz*1.5),0,T2);ctx.stroke()}}}
 
 window.render=render;window.proj=proj;window.hasWebGPU=hasWebGPU;window.cv=cv
