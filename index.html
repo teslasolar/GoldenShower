@@ -143,7 +143,7 @@ cv.addEventListener('click',()=>{if(running&&!locked)cv.requestPointerLock()})
 
 // ═══ SIMPLE SOFTWARE 3D RENDERER ═══
 cv.width=innerWidth;cv.height=innerHeight
-const ctx=cv.getContext('2d');if(!ctx){console.error('no 2d ctx');return}
+const ctx=cv.getContext('2d')
 window.addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight})
 
 function proj(x,y,z){
