@@ -41,252 +41,42 @@ canvas{display:block;width:100vw;height:100vh}
     <kbd>Space</kbd> jump · <kbd>Enter</kbd> chat · <kbd>🎮 Xbox</kbd> Left stick + Right stick + RT
   </div>
 </div>
+
+<!-- ═══ KOTOBA UDT MODULES ═══ -->
+<!-- 唱 chat · 聴繋 player · 入 input · 群 network · 波衝弾 combat · 景幀目 renderer -->
+<script src="src/udt/chat.js"></script>
+<script src="src/udt/player.js"></script>
+<script src="src/udt/network.js"></script>
+<script src="src/udt/combat.js"></script>
+<script src="src/udt/input.js"></script>
+<script src="src/udt/renderer.js"></script>
+
 <script>
-const cv=document.getElementById('cv')
-const $=id=>document.getElementById(id),Rn=Math.random,T=Math.PI*2,FL=Math.floor,MN=Math.min,MX=Math.max
-
-// ═══ PLAYER STATE ═══
-const ME={name:'Agent_'+Rn().toString(36).substr(2,4).toUpperCase(),
-x:0,y:1.6,z:0,yaw:0,pitch:0,vx:0,vy:0,vz:0,
-shots:0,color:'#d4af37'}
-const PEERS=new Map()
-const keys={},mouse={dx:0,dy:0}
-let locked=false,running=false
-
-// ═══ FEMTO AI BOTS ═══
-const BOTS=[
-{name:'🤖 Auric',x:8,y:1.6,z:8,yaw:0,color:'#d4af37',state:'patrol',target:null,fireCd:0,
- waypoints:[[8,8],[8,-8],[-8,-8],[-8,8]],wpIdx:0,aggro:0,personality:'balanced'},
-{name:'🔴 Viper',x:-10,y:1.6,z:5,yaw:Math.PI,color:'#ff4444',state:'hunt',target:null,fireCd:0,
- waypoints:[[-10,5],[-10,-10],[10,-10],[10,5]],wpIdx:0,aggro:.7,personality:'aggressive'},
-{name:'🟣 Mayday',x:0,y:1.6,z:-12,yaw:0,color:'#aa44ff',state:'patrol',target:null,fireCd:0,
- waypoints:[[0,-12],[12,0],[0,12],[-12,0]],wpIdx:0,aggro:.3,personality:'defensive'},
-{name:'⚪ Samedi',x:-6,y:1.6,z:-6,yaw:1,color:'#cccccc',state:'wander',target:null,fireCd:0,
- waypoints:[[-6,-6],[6,-6],[6,6],[-6,6]],wpIdx:0,aggro:.5,personality:'erratic'}]
-
-function femtoDecide(bot,dt){
-const dx=ME.x-bot.x,dz=ME.z-bot.z,dist=Math.sqrt(dx*dx+dz*dz)
-const angleToPlayer=Math.atan2(-dx,-dz)
-// FEMTO softmax: distance → aggression → action
-const huntWeight=bot.aggro+MN(1,8/dist)*.5
-const patrolWeight=1-huntWeight
-if(huntWeight>patrolWeight&&dist<18){
-  bot.state='hunt';bot.target={x:ME.x,z:ME.z}
-  bot.yaw+=(angleToPlayer-bot.yaw)*.06
-  const spd=.06+bot.aggro*.04
-  bot.x-=Math.sin(bot.yaw)*spd;bot.z-=Math.cos(bot.yaw)*spd
-  bot.fireCd-=dt
-  if(dist<15&&bot.fireCd<=0){
-    bot.fireCd=.8+Rn()*(1-bot.aggro)
-    const bdx=-Math.sin(bot.yaw)*.5,bdz=-Math.cos(bot.yaw)*.5
-    blasts.push({x:bot.x,y:bot.y,z:bot.z,dx:bdx,dy:(Rn()-.5)*.05,dz:bdz,life:1,hue:Rn(),owner:bot.name})}}
-else{bot.state='patrol'
-  const wp=bot.waypoints[bot.wpIdx]
-  const wx=wp[0]-bot.x,wz=wp[1]-bot.z,wd=Math.sqrt(wx*wx+wz*wz)
-  if(wd<1.5){bot.wpIdx=(bot.wpIdx+1)%bot.waypoints.length}
-  const ang=Math.atan2(-wx,-wz);bot.yaw+=(ang-bot.yaw)*.04
-  bot.x-=Math.sin(bot.yaw)*.04;bot.z-=Math.cos(bot.yaw)*.04}
-if(bot.personality==='erratic'&&Rn()<.02){bot.yaw+=Rn()*2-1;bot.wpIdx=FL(Rn()*bot.waypoints.length)}
-bot.x=MX(-19,MN(19,bot.x));bot.z=MX(-19,MN(19,bot.z))}
-
-// ═══ BLASTS ═══
-const blasts=[]
-function fireBlast(){
-const dx=-Math.sin(ME.yaw)*Math.cos(ME.pitch),dy=Math.sin(ME.pitch),dz=-Math.cos(ME.yaw)*Math.cos(ME.pitch)
-blasts.push({x:ME.x,y:ME.y,z:ME.z,dx:dx*.5,dy:dy*.5,dz:dz*.5,life:1,
-hue:Rn(),owner:ME.name})
-ME.shots++
-broadcastBlast(dx,dy,dz)}
-
-// ═══ CHAT ═══
-function addChat(name,text,sys){const log=$('chat-log')
-const d=document.createElement('div')
-d.innerHTML=sys?`<span class="sys">${text}</span>`:`<span class="name">${name}:</span> ${text}`
-log.appendChild(d);log.scrollTop=log.scrollHeight}
-$('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('chat-input').value.trim()){
-const msg=$('chat-input').value.trim();addChat(ME.name,msg);broadcastChat(msg);$('chat-input').value='';$('chat-input').blur();e.preventDefault()}
-if(e.key==='Escape')$('chat-input').blur()})
-
-// ═══ P2P via BroadcastChannel (same-origin tabs) + optional MQTT ═══
-const bc=new BroadcastChannel('golden-shower-lobby')
-let mqtt=null
-bc.onmessage=e=>{const d=e.data
-if(d.type==='pos')PEERS.set(d.name,{x:d.x,y:d.y,z:d.z,yaw:d.yaw,color:d.color,t:Date.now()})
-if(d.type==='chat')addChat(d.name,d.text)
-if(d.type==='blast')blasts.push({x:d.x,y:d.y,z:d.z,dx:d.dx,dy:d.dy,dz:d.dz,life:1,hue:d.hue,owner:d.name})
-if(d.type==='join')addChat('',d.name+' joined the lobby',true)
-if(d.type==='leave')PEERS.delete(d.name)}
-function broadcast(msg){bc.postMessage(msg);if(mqtt)try{mqtt.send(JSON.stringify(msg))}catch(e){}}
-function broadcastPos(){broadcast({type:'pos',name:ME.name,x:ME.x,y:ME.y,z:ME.z,yaw:ME.yaw,color:ME.color})}
-function broadcastChat(text){broadcast({type:'chat',name:ME.name,text})}
-function broadcastBlast(dx,dy,dz){broadcast({type:'blast',name:ME.name,x:ME.x,y:ME.y,z:ME.z,dx:dx*.5,dy:dy*.5,dz:dz*.5,hue:Rn()})}
-
-// ═══ TRY MQTT FOR CROSS-ORIGIN ═══
-function tryMQTT(){
-const brokers=['wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt']
-const broker=brokers[FL(Rn()*brokers.length)]
-try{mqtt=new WebSocket(broker);mqtt.binaryType='arraybuffer'
-mqtt.onopen=()=>{addChat('','Connected to global P2P',true)}
-mqtt.onclose=()=>{mqtt=null;addChat('','P2P disconnected — local mode',true)}
-mqtt.onerror=()=>{mqtt=null}}catch(e){}}
-
-// ═══ INPUT ═══
-document.addEventListener('keydown',e=>{keys[e.code]=true
-if(e.code==='Enter'&&document.activeElement!==$('chat-input')){$('chat-input').focus();e.preventDefault()}
-if(e.code==='KeyI'){invertY=!invertY;addChat('','Mouse Y: '+(invertY?'inverted':'normal'),true)}})
-document.addEventListener('keyup',e=>keys[e.code]=false)
-document.addEventListener('mousemove',e=>{if(locked){mouse.dx+=e.movementX;mouse.dy+=e.movementY}})
-document.addEventListener('mousedown',e=>{if(locked&&e.button===0)fireBlast()})
-document.addEventListener('pointerlockchange',()=>locked=!!document.pointerLockElement)
-let invertY=false
-
-// ═══ GAMEPAD (Xbox/PS/generic) ═══
-let gamepadIdx=null
-window.addEventListener('gamepadconnected',e=>{gamepadIdx=e.gamepad.index
-addChat('','🎮 Gamepad connected: '+e.gamepad.id.substring(0,30),true)})
-window.addEventListener('gamepaddisconnected',e=>{gamepadIdx=null;addChat('','🎮 Gamepad disconnected',true)})
-
-function pollGamepad(){
-if(gamepadIdx===null)return
-const gp=navigator.getGamepads()[gamepadIdx]
-if(!gp)return
-const deadzone=.15
-// Left stick — move
-const lx=Math.abs(gp.axes[0])>deadzone?gp.axes[0]:0
-const ly=Math.abs(gp.axes[1])>deadzone?gp.axes[1]:0
-// Right stick — look
-const rx=Math.abs(gp.axes[2])>deadzone?gp.axes[2]:0
-const ry=Math.abs(gp.axes[3])>deadzone?gp.axes[3]:0
-const moveSpd=.15,lookSpd=.04
-if(ly<0){ME.x+=Math.sin(ME.yaw)*ly*moveSpd;ME.z+=Math.cos(ME.yaw)*ly*moveSpd}
-if(ly>0){ME.x+=Math.sin(ME.yaw)*ly*moveSpd;ME.z+=Math.cos(ME.yaw)*ly*moveSpd}
-if(lx){ME.x+=Math.cos(ME.yaw)*lx*moveSpd;ME.z-=Math.sin(ME.yaw)*lx*moveSpd}
-ME.yaw+=rx*lookSpd
-ME.pitch=MX(-.8,MN(.8,ME.pitch-ry*lookSpd))
-// A = jump, RT = shoot, B = chat
-if(gp.buttons[0]?.pressed&&ME.y<=1.6)ME.vy=.15
-if(gp.buttons[7]?.pressed||gp.buttons[5]?.pressed){if(!gp._fireCd){fireBlast();gp._fireCd=8}else gp._fireCd--}
-else gp._fireCd=0}
-
-// ═══ WEBGPU CHECK ═══
-let hasWebGPU=false
-if(navigator.gpu){navigator.gpu.requestAdapter().then(a=>{if(a){hasWebGPU=true;addChat('','⚡ WebGPU available',true)}}).catch(()=>{})}
-
-function enterLobby(){$('intro').style.display='none';cv.requestPointerLock();running=true
-broadcast({type:'join',name:ME.name});addChat('','Welcome '+ME.name,true)
-addChat('','Controls: WASD/🎮 move · Mouse/Right stick look · Click/RT shoot · I=invert Y',true)
-tryMQTT()}
+// ═══ ORCHESTRATOR · 和 · wires UDTs together ═══
+function enterLobby(){
+  document.getElementById('intro').style.display='none'
+  cv.requestPointerLock();running=true
+  broadcast({type:'join',name:ME.name})
+  addChat('','Welcome '+ME.name,true)
+  addChat('','Controls: WASD/🎮 move · Mouse/Right stick look · Click/RT shoot · I=invert Y',true)
+  tryMQTT()}
 cv.addEventListener('click',()=>{if(running&&!locked)cv.requestPointerLock()})
 
-// ═══ SIMPLE SOFTWARE 3D RENDERER ═══
-cv.width=innerWidth;cv.height=innerHeight
-const ctx=cv.getContext('2d')
-window.addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight})
-
-function proj(x,y,z){
-const dx=x-ME.x,dy=y-ME.y,dz=z-ME.z
-const cx=Math.cos(-ME.yaw),sx=Math.sin(-ME.yaw),cy=Math.cos(-ME.pitch),sy=Math.sin(-ME.pitch)
-const rx=dx*cx+dz*sx,rz=-dx*sx+dz*cx
-const ry2=dy*cy-rz*sy,rz2=dy*sy+rz*cy
-if(rz2<.1)return null
-const fov=cv.width*.8
-return{sx:cv.width/2+rx/rz2*fov,sy:cv.height/2-ry2/rz2*fov,d:rz2}}
-
-// ═══ ARENA GEOMETRY ═══
-const FLOOR_LINES=[],WALLS=[],PILLARS=[]
-for(let i=-20;i<=20;i++){FLOOR_LINES.push({x1:i,z1:-20,x2:i,z2:20});FLOOR_LINES.push({x1:-20,z1:i,x2:20,z2:i})}
-for(let i=0;i<4;i++){const a=i*T/4,r=20
-WALLS.push({x1:Math.cos(a)*r,z1:Math.sin(a)*r,x2:Math.cos(a+T/4)*r,z2:Math.sin(a+T/4)*r,h:4})}
-for(let i=0;i<8;i++){const a=i*T/8,r=12;PILLARS.push({x:Math.cos(a)*r,z:Math.sin(a)*r,r:.4,h:5})}
-
-function render(){
-const w=cv.width,h=cv.height
-ctx.fillStyle='#0a0a0f';ctx.fillRect(0,0,w,h)
-// sky gradient
-const skyG=ctx.createLinearGradient(0,0,0,h/2)
-skyG.addColorStop(0,'#0a0a1a');skyG.addColorStop(1,'#14142a');ctx.fillStyle=skyG;ctx.fillRect(0,0,w,h/2)
-// floor grid
-ctx.strokeStyle='rgba(212,175,55,.06)';ctx.lineWidth=1
-FLOOR_LINES.forEach(l=>{const a=proj(l.x1,0,l.z1),b=proj(l.x2,0,l.z2)
-if(a&&b&&a.d<40&&b.d<40){ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke()}})
-// walls
-ctx.strokeStyle='rgba(212,175,55,.15)';ctx.lineWidth=2
-WALLS.forEach(w2=>{const corners=[[w2.x1,0,w2.z1],[w2.x2,0,w2.z2],[w2.x2,w2.h,w2.z2],[w2.x1,w2.h,w2.z1]]
-const pp=corners.map(c=>proj(...c)).filter(Boolean)
-if(pp.length>=3){ctx.beginPath();pp.forEach((p,i)=>i?ctx.lineTo(p.sx,p.sy):ctx.moveTo(p.sx,p.sy));ctx.closePath();ctx.stroke()}})
-// pillars
-ctx.strokeStyle='rgba(212,175,55,.2)';PILLARS.forEach(p=>{
-const b=proj(p.x,0,p.z),t=proj(p.x,p.h,p.z)
-if(b&&t&&b.d<35){const sz=MX(2,20/b.d);ctx.beginPath();ctx.moveTo(b.sx,b.sy);ctx.lineTo(t.sx,t.sy);ctx.stroke()
-ctx.fillStyle='rgba(212,175,55,.1)';ctx.fillRect(t.sx-sz,t.sy,sz*2,b.sy-t.sy)}})
-// bots
-BOTS.forEach(bot=>{const bp=proj(bot.x,bot.y-.3,bot.z)
-if(bp&&bp.d<40){const sz=MX(6,80/bp.d)
-ctx.fillStyle=bot.color;ctx.fillRect(bp.sx-sz/2,bp.sy-sz*2,sz,sz*2)
-// head
-ctx.beginPath();ctx.arc(bp.sx,bp.sy-sz*2.2,sz*.4,0,T);ctx.fill()
-// state indicator
-ctx.fillStyle=bot.state==='hunt'?'#ff4444':'#44ff44'
-ctx.beginPath();ctx.arc(bp.sx,bp.sy-sz*2.8,sz*.15,0,T);ctx.fill()
-// name
-ctx.fillStyle='#fff';ctx.font=MX(7,10-bp.d*.15)+'px Courier New';ctx.textAlign='center'
-ctx.fillText(bot.name,bp.sx,bp.sy-sz*2.8-6)
-// aim line when hunting
-if(bot.state==='hunt'){ctx.strokeStyle=bot.color+'44';ctx.lineWidth=1;ctx.beginPath()
-ctx.moveTo(bp.sx,bp.sy-sz);const aimEnd=proj(bot.x-Math.sin(bot.yaw)*5,bot.y,bot.z-Math.cos(bot.yaw)*5)
-if(aimEnd)ctx.lineTo(aimEnd.sx,aimEnd.sy);ctx.stroke()}}})
-// peers
-PEERS.forEach((p,name)=>{const pp=proj(p.x,p.y-.3,p.z)
-if(pp&&pp.d<40){const sz=MX(6,80/pp.d)
-ctx.fillStyle=p.color||'#888';ctx.fillRect(pp.sx-sz/2,pp.sy-sz*2,sz,sz*2)
-ctx.beginPath();ctx.arc(pp.sx,pp.sy-sz*2.2,sz*.4,0,T);ctx.fill()
-ctx.fillStyle='#fff';ctx.font=MX(8,12-pp.d*.2)+'px Courier New';ctx.textAlign='center'
-ctx.fillText(name,pp.sx,pp.sy-sz*2-8)}})
-// blasts
-for(let i=blasts.length-1;i>=0;i--){const b=blasts[i]
-b.x+=b.dx;b.y+=b.dy;b.z+=b.dz;b.life-=.015
-const bp=proj(b.x,b.y,b.z)
-if(bp&&bp.d<50){const sz=MX(2,30/bp.d)*b.life
-ctx.fillStyle=`hsla(${b.hue*360},80%,60%,${b.life*.6})`;ctx.beginPath();ctx.arc(bp.sx,bp.sy,sz,0,T);ctx.fill()
-ctx.strokeStyle=`hsla(${b.hue*360},80%,80%,${b.life*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(bp.sx,bp.sy,sz*1.5,0,T);ctx.stroke()}
-if(b.life<=0)blasts.splice(i,1)}}
-
-// ═══ PHYSICS ═══
-function update(){if(!running)return
-const spd=.12,sens=.003
-ME.yaw+=mouse.dx*sens
-ME.pitch=MX(-.8,MN(.8,ME.pitch+(invertY?1:-1)*mouse.dy*sens))
-mouse.dx=0;mouse.dy=0
-// forward = into the screen along yaw direction
-const fwdX=Math.sin(ME.yaw),fwdZ=Math.cos(ME.yaw)
-const rightX=Math.cos(ME.yaw),rightZ=-Math.sin(ME.yaw)
-if(keys.KeyW){ME.x+=fwdX*spd;ME.z+=fwdZ*spd}
-if(keys.KeyS){ME.x-=fwdX*spd;ME.z-=fwdZ*spd}
-if(keys.KeyA){ME.x-=rightX*spd;ME.z-=rightZ*spd}
-if(keys.KeyD){ME.x+=rightX*spd;ME.z+=rightZ*spd}
-if(keys.Space&&ME.y<=1.6){ME.vy=.15}
-ME.vy-=.008;ME.y+=ME.vy;if(ME.y<1.6){ME.y=1.6;ME.vy=0}
-ME.x=MX(-19,MN(19,ME.x));ME.z=MX(-19,MN(19,ME.z))
-// gamepad
-pollGamepad()
-// FEMTO AI update
-BOTS.forEach(bot=>femtoDecide(bot,.016))
-// cull stale peers
-const now=Date.now();PEERS.forEach((p,k)=>{if(now-p.t>10000)PEERS.delete(k)})}
-
-// ═══ FRAME LOOP ═══
 let posTimer=0
 function frame(){requestAnimationFrame(frame)
-update();render()
-posTimer+=.016;if(posTimer>.1){posTimer=0;if(running)broadcastPos()}
-$('hud').textContent=`GOLDEN SHOWER · GLOBAL LOBBY\n`+
-`${ME.name} · pos(${ME.x.toFixed(1)},${ME.z.toFixed(1)})\n`+
-`shots: ${ME.shots} · peers: ${PEERS.size}\n`+
-`blasts: ${blasts.length} · bots: ${BOTS.length} · dmg: 0 (test)\n`+
-`🎮:${gamepadIdx!==null?'connected':'none'} gpu:${hasWebGPU?'webgpu':'canvas2d'} Y:${invertY?'inv':'norm'}\n`+
-`${BOTS.map(b=>b.name.substring(0,6)+':'+b.state[0]).join(' ')}`
-let pList='PLAYERS\n'+ME.name+' (you)\n';PEERS.forEach((p,n)=>pList+=n+'\n')
-$('players').textContent=pList}
+  updatePlayer()
+  updateCombat(.016)
+  cullPeers()
+  render()
+  posTimer+=.016;if(posTimer>.1){posTimer=0;if(running)broadcastPos()}
+  document.getElementById('hud').textContent=
+    `GOLDEN SHOWER · GLOBAL LOBBY\n`+
+    `${ME.name} · pos(${ME.x.toFixed(1)},${ME.z.toFixed(1)})\n`+
+    `shots: ${ME.shots} · peers: ${PEERS.size} · bots: ${BOTS.length} · dmg: 0\n`+
+    `🎮:${gamepadIdx!==null?'yes':'—'} gpu:${hasWebGPU?'webgpu':'canvas2d'} Y:${invertY?'inv':'norm'}\n`+
+    `${BOTS.map(b=>b.name.substring(0,6)+':'+b.state[0]).join(' ')}`
+  let pList='PLAYERS\n'+ME.name+' (you)\n';PEERS.forEach((p,n)=>pList+=n+'\n')
+  document.getElementById('players').textContent=pList}
 frame()
 </script>
 </body></html>
