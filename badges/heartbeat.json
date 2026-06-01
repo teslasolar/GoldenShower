@@ -1,0 +1,48 @@
+{
+  "ts": "2026-06-01 03:25",
+  "repo": "teslasolar/goldenshower",
+  "stars": 1,
+  "forks": 1,
+  "issues": {
+    "open": 0,
+    "closed": 0
+  },
+  "prs": 5,
+  "labels": {},
+  "commits": [
+    {
+      "sha": "be025a6",
+      "msg": "Replace landing page with instant global lobby",
+      "author": "teslasolar"
+    },
+    {
+      "sha": "78d5883",
+      "msg": "Add dynamic SVG dashboard, badges, and gen-svg.js",
+      "author": "teslasolar"
+    },
+    {
+      "sha": "ac8580f",
+      "msg": "Add Steam rebrand, CI pipeline, unit tests, dynamic README",
+      "author": "teslasolar"
+    },
+    {
+      "sha": "50509c7",
+      "msg": "Fix controls screen blocking and global chat initialization",
+      "author": "Claude"
+    },
+    {
+      "sha": "e4ea5fd",
+      "msg": "Add game enhancements: global chat, pickups, minimap, scoreb",
+      "author": "Claude"
+    },
+    {
+      "sha": "292e754",
+      "msg": "Add N/E/S/W dock areas to arena",
+      "author": "Claude"
+    }
+  ],
+  "characters": 8,
+  "weapons": 7,
+  "maps": 6,
+  "status": "alive"
+}

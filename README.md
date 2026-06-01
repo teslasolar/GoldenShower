@@ -1,168 +1,62 @@
-# 🔫 GOLDEN SHOWER 🔫
-## Retro Arena FPS by Konomi Systems
+# 🔫 GOLDEN SHOWER
 
-```
-   ╔═══════════════════════════════════════════════════════════╗
-   ║  ██████╗  ██████╗ ██╗     ██████╗ ███████╗███╗   ██╗     ║
-   ║ ██╔════╝ ██╔═══██╗██║     ██╔══██╗██╔════╝████╗  ██║     ║
-   ║ ██║  ███╗██║   ██║██║     ██║  ██║█████╗  ██╔██╗ ██║     ║
-   ║ ██║   ██║██║   ██║██║     ██║  ██║██╔══╝  ██║╚██╗██║     ║
-   ║ ╚██████╔╝╚██████╔╝███████╗██████╔╝███████╗██║ ╚████║     ║
-   ║  ╚═════╝  ╚═════╝ ╚══════╝╚═════╝ ╚══════╝╚═╝  ╚═══╝     ║
-   ║           S H O W E R   //   K O N O M I                 ║
-   ╚═══════════════════════════════════════════════════════════╝
-```
+![Heartbeat](badges/heartbeat.svg) [![CI](https://github.com/teslasolar/goldenshower/actions/workflows/ci.yml/badge.svg)](https://github.com/teslasolar/goldenshower/actions) [![Play](https://img.shields.io/badge/▶-PLAY%20NOW-d4af37?style=flat-square)](https://teslasolar.github.io/goldenshower)
 
-[![CI](https://github.com/teslasolar/goldenshower/actions/workflows/ci.yml/badge.svg)](https://github.com/teslasolar/goldenshower/actions)
-[![Issues](https://img.shields.io/github/issues/teslasolar/goldenshower?label=tags&color=gold)](https://github.com/teslasolar/goldenshower/issues)
-[![Stars](https://img.shields.io/github/stars/teslasolar/goldenshower?color=gold)](https://github.com/teslasolar/goldenshower)
-[![Pages](https://img.shields.io/badge/play-GitHub%20Pages-brightgreen)](https://teslasolar.github.io/goldenshower)
-[![Steam](https://img.shields.io/badge/steam-coming%20soon-blue)](https://github.com/teslasolar/goldenshower)
-
----
-
-## 📊 Live Dashboard
-
-> Auto-generated from GitHub API. Stars, issues, commits, label distribution — all live.
+**Retro Arena FPS · P2P · Zero Servers · Konomi Systems**
 
 ![Dashboard](badges/dashboard.svg)
 
----
+## Quick Start
 
-## 🎮 Characters
-
-![Characters](badges/characters.svg)
-
----
-
-## 🔫 Weapons
-
-![Weapons](badges/weapons.svg)
-
----
-
-## 🗺️ Maps
-
-![Maps](badges/maps.svg)
-
----
-
-## 🌐 KQTT P2P Network
-
-![Network](badges/network.svg)
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    GOLDEN SHOWER STACK                      │
-├─────────────────────────────────────────────────────────────┤
-│  📄 MarkdownRunner    │ Parse docs → Execute code           │
-│  ⚡ Engine            │ WebGL + Mat4/Vec3 + Input + Loop    │
-│  🌐 KQTT Network     │ WebRTC P2P + StateSync + DHT        │
-│  📦 Lobby             │ Host/Join + Settings + Ready        │
-│  🔫 Game              │ Players + Weapons + Arena           │
-│  🎵 Audio Fabric      │ Konomi audio-reactive visuals       │
-│  📋 Tag DB            │ GitHub Issues → live game data      │
-└─────────────────────────────────────────────────────────────┘
-
-     GitHub Pages VM ◄──── WebRTC P2P ────► GitHub Pages VM
-            │                                      │
-            └──── GitHub Issues Tag DB ────────────┘
-```
-
-## 🚀 Play
-
-### Browser (GitHub Pages — free forever)
-```
+```bash
+# browser
 https://teslasolar.github.io/goldenshower
+
+# local
+git clone https://github.com/teslasolar/goldenshower && cd goldenshower && npx serve .
 ```
 
-### Local Dev
-```bash
-git clone https://github.com/teslasolar/goldenshower.git
-cd goldenshower
-npm start
-# → open localhost:3000
+`WASD` move · `Mouse` look · `Click` shoot · `Space` jump · `Enter` chat · `Tab` players
+
+## Tag DB
+
+Open a [GitHub Issue](https://github.com/teslasolar/goldenshower/issues) with label `tag` to add live game content:
+
+```
+weapon:plasma   → dmg:40 rate:auto range:800
+map:rooftop     → size:medium theme:urban spawns:8
+character:ghost → trait:invisible speed:1.2 hitbox:small
 ```
 
-### Tests
-```bash
-npm test          # 17 unit tests
-npm run lint      # doc validation
+CI reads issues → regenerates dashboard SVG → game loads them at runtime.
+
+## Architecture
+
+```
+📄 MarkdownRunner ──→ Parse docs → Execute code
+⚡ Engine ──────────→ WebGL + Mat4 + Input + Loop
+🌐 KQTT ───────────→ WebRTC P2P + DHT + StateSync
+📋 Tag DB ─────────→ GitHub Issues → Live data
+🎵 AudioFabric ────→ Ki blasts + audio-reactive fx
 ```
 
-## 📋 Tag DB (GitHub Issues = Live Game Data)
+## Heartbeat API
 
-Every GitHub Issue with label `tag` is a **live database entry**. The game reads these at runtime.
-
-### Add a weapon:
 ```
-Title: weapon:plasma-rifle
-Labels: tag, weapon
-Body:
-  dmg: 40
-  rate: auto
-  range: 800
-  type: energy
-  color: #44ffaa
+GET badges/heartbeat.json  → { status, stars, forks, issues, commits, ts }
+GET badges/heartbeat.svg   → animated pulse badge
+GET badges/dashboard.svg   → full live dashboard
 ```
 
-### Add a map:
-```
-Title: map:rooftop
-Labels: tag, map
-Body:
-  size: medium
-  theme: urban
-  spawns: 8
-```
+Auto-updated on every push by CI. The SVG has animated elements — the heartbeat pulses, network lines blink, the LIVE dot breathes.
 
-### Add a character:
-```
-Title: character:ghost
-Labels: tag, character
-Body:
-  color: #888888
-  trait: invisible-on-crouch
-  hitbox: standard
-  speed: 1.2
-```
+## Distribution
 
-CI regenerates SVG badges on every push. Community mods = opening issues.
-
-## 📄 Markdown Runner
-
-The entire game lives in `docs/`. The `markdown-runner.js` engine:
-1. Fetches `.md` files
-2. Extracts fenced `js` code blocks
-3. Executes them in dependency order
-4. The game assembles itself from documentation
-
-Change the docs → change the game. No build step.
-
-## 🎵 Audio Fabric Integration
-
-GOLDEN SHOWER inherits from the [Konomi](https://github.com/teslasolar/AudioFabric) audio-reactive engine:
-- Ki blast charge system (voice-powered)
-- Audio-reactive arena lighting
-- Kotoba glyph effects on kills
-- Vagal bass response on death
-
-## 📦 Distribution
-
-| Platform | Status | Price | Multiplayer |
-|----------|--------|-------|-------------|
-| **GitHub Pages** | ✅ Live | Free | KQTT P2P |
-| **Steam** | 🔜 Soon | $4.99 | KQTT P2P |
-| **itch.io** | 🔜 Planned | PWYW | KQTT P2P |
-
-All platforms use the same KQTT P2P protocol — cross-play between browser and desktop.
+| Platform | Status | Price |
+|----------|--------|-------|
+| GitHub Pages | ✅ Live | Free |
+| Steam | 🔜 | $4.99 |
 
 ---
 
-**Konomi Systems** · GOLDEN SHOWER · No servers, no rules, no pants.
-
-*SVGs auto-generated by `scripts/gen-svg.js` from GitHub API*
+*Konomi Systems · no servers no rules no pants*
