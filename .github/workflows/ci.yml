@@ -50,7 +50,7 @@ jobs:
           path: '.'
       - uses: actions/deploy-pages@v4
 
-  stats:
+  badges:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     permissions:
@@ -61,19 +61,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Generate stats SVG from issues
+      - name: Generate SVG badges from GitHub API
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/gen-svg.js
+      - name: Commit badges if changed
         run: |
-          node -e "
-          const https=require('https');
-          const opts={hostname:'api.github.com',path:'/repos/teslasolar/goldenshower/issues?state=all&per_page=100&labels=tag',
-          headers:{'User-Agent':'goldenshower-ci','Authorization':'token '+process.env.GH_TOKEN}};
-          https.get(opts,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{
-          const issues=JSON.parse(d);const tags={};
-          issues.forEach(i=>{(i.labels||[]).forEach(l=>{tags[l.name]=(tags[l.name]||0)+1})});
-          const open=issues.filter(i=>i.state==='open').length;
-          const closed=issues.filter(i=>i.state==='closed').length;
-          console.log(JSON.stringify({total:issues.length,open,closed,tags},null,2))
-          })}).on('error',e=>console.log('{}'))
-          "
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add badges/*.svg
+          git diff --cached --quiet || git commit -m "Auto-update SVG badges [skip ci]"
+          git push || true
