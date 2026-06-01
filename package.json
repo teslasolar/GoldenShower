@@ -9,6 +9,10 @@
   "scripts": {
     "test": "node test/unit.js",
     "start": "npx serve . -l 3000",
+    "dev-agent": "node scripts/dev-agent.js",
+    "auto-play": "node scripts/auto-play.js",
+    "play-test": "node test/play-test.js",
+    "badges": "node scripts/gen-svg.js",
     "lint": "node -e \"const fs=require('fs');const d=fs.readdirSync('docs',{recursive:true}).filter(f=>f.endsWith('.md'));console.log(d.length+' docs OK')\""
   },
   "repository": {
