@@ -42,7 +42,7 @@ canvas{display:block;width:100vw;height:100vh}
   </div>
 </div>
 <script>
-const cv=document.getElementById('cv'),gl=cv.getContext('webgl2')||cv.getContext('webgl')
+const cv=document.getElementById('cv')
 const $=id=>document.getElementById(id),Rn=Math.random,T=Math.PI*2,FL=Math.floor,MN=Math.min,MX=Math.max
 
 // ═══ PLAYER STATE ═══
@@ -52,6 +52,42 @@ shots:0,color:'#d4af37'}
 const PEERS=new Map()
 const keys={},mouse={dx:0,dy:0}
 let locked=false,running=false
+
+// ═══ FEMTO AI BOTS ═══
+const BOTS=[
+{name:'🤖 Auric',x:8,y:1.6,z:8,yaw:0,color:'#d4af37',state:'patrol',target:null,fireCd:0,
+ waypoints:[[8,8],[8,-8],[-8,-8],[-8,8]],wpIdx:0,aggro:0,personality:'balanced'},
+{name:'🔴 Viper',x:-10,y:1.6,z:5,yaw:Math.PI,color:'#ff4444',state:'hunt',target:null,fireCd:0,
+ waypoints:[[-10,5],[-10,-10],[10,-10],[10,5]],wpIdx:0,aggro:.7,personality:'aggressive'},
+{name:'🟣 Mayday',x:0,y:1.6,z:-12,yaw:0,color:'#aa44ff',state:'patrol',target:null,fireCd:0,
+ waypoints:[[0,-12],[12,0],[0,12],[-12,0]],wpIdx:0,aggro:.3,personality:'defensive'},
+{name:'⚪ Samedi',x:-6,y:1.6,z:-6,yaw:1,color:'#cccccc',state:'wander',target:null,fireCd:0,
+ waypoints:[[-6,-6],[6,-6],[6,6],[-6,6]],wpIdx:0,aggro:.5,personality:'erratic'}]
+
+function femtoDecide(bot,dt){
+const dx=ME.x-bot.x,dz=ME.z-bot.z,dist=Math.sqrt(dx*dx+dz*dz)
+const angleToPlayer=Math.atan2(-dx,-dz)
+// FEMTO softmax: distance → aggression → action
+const huntWeight=bot.aggro+MN(1,8/dist)*.5
+const patrolWeight=1-huntWeight
+if(huntWeight>patrolWeight&&dist<18){
+  bot.state='hunt';bot.target={x:ME.x,z:ME.z}
+  bot.yaw+=(angleToPlayer-bot.yaw)*.06
+  const spd=.06+bot.aggro*.04
+  bot.x-=Math.sin(bot.yaw)*spd;bot.z-=Math.cos(bot.yaw)*spd
+  bot.fireCd-=dt
+  if(dist<15&&bot.fireCd<=0){
+    bot.fireCd=.8+Rn()*(1-bot.aggro)
+    const bdx=-Math.sin(bot.yaw)*.5,bdz=-Math.cos(bot.yaw)*.5
+    blasts.push({x:bot.x,y:bot.y,z:bot.z,dx:bdx,dy:(Rn()-.5)*.05,dz:bdz,life:1,hue:Rn(),owner:bot.name})}}
+else{bot.state='patrol'
+  const wp=bot.waypoints[bot.wpIdx]
+  const wx=wp[0]-bot.x,wz=wp[1]-bot.z,wd=Math.sqrt(wx*wx+wz*wz)
+  if(wd<1.5){bot.wpIdx=(bot.wpIdx+1)%bot.waypoints.length}
+  const ang=Math.atan2(-wx,-wz);bot.yaw+=(ang-bot.yaw)*.04
+  bot.x-=Math.sin(bot.yaw)*.04;bot.z-=Math.cos(bot.yaw)*.04}
+if(bot.personality==='erratic'&&Rn()<.02){bot.yaw+=Rn()*2-1;bot.wpIdx=FL(Rn()*bot.waypoints.length)}
+bot.x=MX(-19,MN(19,bot.x));bot.z=MX(-19,MN(19,bot.z))}
 
 // ═══ BLASTS ═══
 const blasts=[]
@@ -107,7 +143,7 @@ cv.addEventListener('click',()=>{if(running&&!locked)cv.requestPointerLock()})
 
 // ═══ SIMPLE SOFTWARE 3D RENDERER ═══
 cv.width=innerWidth;cv.height=innerHeight
-const W=cv.width,H=cv.height,ctx=cv.getContext('2d')
+const ctx=cv.getContext('2d');if(!ctx){console.error('no 2d ctx');return}
 window.addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight})
 
 function proj(x,y,z){
@@ -146,12 +182,29 @@ ctx.strokeStyle='rgba(212,175,55,.2)';PILLARS.forEach(p=>{
 const b=proj(p.x,0,p.z),t=proj(p.x,p.h,p.z)
 if(b&&t&&b.d<35){const sz=MX(2,20/b.d);ctx.beginPath();ctx.moveTo(b.sx,b.sy);ctx.lineTo(t.sx,t.sy);ctx.stroke()
 ctx.fillStyle='rgba(212,175,55,.1)';ctx.fillRect(t.sx-sz,t.sy,sz*2,b.sy-t.sy)}})
+// bots
+BOTS.forEach(bot=>{const bp=proj(bot.x,bot.y-.3,bot.z)
+if(bp&&bp.d<40){const sz=MX(6,80/bp.d)
+ctx.fillStyle=bot.color;ctx.fillRect(bp.sx-sz/2,bp.sy-sz*2,sz,sz*2)
+// head
+ctx.beginPath();ctx.arc(bp.sx,bp.sy-sz*2.2,sz*.4,0,T);ctx.fill()
+// state indicator
+ctx.fillStyle=bot.state==='hunt'?'#ff4444':'#44ff44'
+ctx.beginPath();ctx.arc(bp.sx,bp.sy-sz*2.8,sz*.15,0,T);ctx.fill()
+// name
+ctx.fillStyle='#fff';ctx.font=MX(7,10-bp.d*.15)+'px Courier New';ctx.textAlign='center'
+ctx.fillText(bot.name,bp.sx,bp.sy-sz*2.8-6)
+// aim line when hunting
+if(bot.state==='hunt'){ctx.strokeStyle=bot.color+'44';ctx.lineWidth=1;ctx.beginPath()
+ctx.moveTo(bp.sx,bp.sy-sz);const aimEnd=proj(bot.x-Math.sin(bot.yaw)*5,bot.y,bot.z-Math.cos(bot.yaw)*5)
+if(aimEnd)ctx.lineTo(aimEnd.sx,aimEnd.sy);ctx.stroke()}}})
 // peers
 PEERS.forEach((p,name)=>{const pp=proj(p.x,p.y-.3,p.z)
 if(pp&&pp.d<40){const sz=MX(6,80/pp.d)
 ctx.fillStyle=p.color||'#888';ctx.fillRect(pp.sx-sz/2,pp.sy-sz*2,sz,sz*2)
+ctx.beginPath();ctx.arc(pp.sx,pp.sy-sz*2.2,sz*.4,0,T);ctx.fill()
 ctx.fillStyle='#fff';ctx.font=MX(8,12-pp.d*.2)+'px Courier New';ctx.textAlign='center'
-ctx.fillText(name,pp.sx,pp.sy-sz*2-4)}})
+ctx.fillText(name,pp.sx,pp.sy-sz*2-8)}})
 // blasts
 for(let i=blasts.length-1;i>=0;i--){const b=blasts[i]
 b.x+=b.dx;b.y+=b.dy;b.z+=b.dz;b.life-=.015
@@ -174,6 +227,8 @@ if(keys.KeyD){ME.x+=dz*spd;ME.z-=dx*spd}
 if(keys.Space&&ME.y<=1.6){ME.vy=.15}
 ME.vy-=.008;ME.y+=ME.vy;if(ME.y<1.6){ME.y=1.6;ME.vy=0}
 ME.x=MX(-19,MN(19,ME.x));ME.z=MX(-19,MN(19,ME.z))
+// FEMTO AI update
+BOTS.forEach(bot=>femtoDecide(bot,.016))
 // cull stale peers
 const now=Date.now();PEERS.forEach((p,k)=>{if(now-p.t>10000)PEERS.delete(k)})}
 
@@ -185,7 +240,8 @@ posTimer+=.016;if(posTimer>.1){posTimer=0;if(running)broadcastPos()}
 $('hud').textContent=`GOLDEN SHOWER · GLOBAL LOBBY\n`+
 `${ME.name} · pos(${ME.x.toFixed(1)},${ME.z.toFixed(1)})\n`+
 `shots: ${ME.shots} · peers: ${PEERS.size}\n`+
-`blasts: ${blasts.length} · dmg: 0 (test mode)`
+`blasts: ${blasts.length} · bots: ${BOTS.length} · dmg: 0 (test)\n`+
+`${BOTS.map(b=>b.name.substring(0,8)+':'+b.state).join(' ')}`
 let pList='PLAYERS\n'+ME.name+' (you)\n';PEERS.forEach((p,n)=>pList+=n+'\n')
 $('players').textContent=pList}
 frame()

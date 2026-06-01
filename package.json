@@ -19,8 +19,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "playwright": "^1.57.0",
     "puppeteer": "^24.33.0",
     "puppeteer-core": "^24.33.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
   }
 }
